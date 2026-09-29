@@ -1,0 +1,1212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vākya — Sanskrit Offline Decoder</title>
+<!-- Fonts load when online; app works with system fonts when offline -->
+<link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Noto+Serif+Devanagari:wght@300;400;500;600&family=Cinzel:wght@400;500&family=Noto+Sans+Kannada:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#120D07;--ink-mid:#3A2810;--ink-soft:#7A5C35;--ink-muted:#B08A5C;
+  --saffron:#C8611A;--saffron-d:#9E4A10;--saffron-l:#E8894A;--saffron-pale:#FDF4EC;
+  --gold:#B8902A;--gold-l:#E2C86A;
+  --cream:#FDFAF4;--cream-mid:#F5EFE3;--cream-dark:#EDE3D0;--divider:#D8C9A8;
+  --teal:#1A7A6C;--teal-l:#D4F0EB;
+  --violet:#5C3A7A;--violet-l:#EDE4F5;
+  --rose:#9E3050;--rose-l:#F5E0E8;
+  --green:#2A6A3A;--green-l:#DFF0E4;
+  --r:6px;
+  --sh-sm:0 2px 8px rgba(18,13,7,.07);
+  --sh-md:0 6px 24px rgba(18,13,7,.11);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{background:var(--cream);color:var(--ink);font-family:'EB Garamond',Georgia,serif;font-size:18px;line-height:1.75;min-height:100vh}
+
+/* HEADER */
+header{background:var(--ink);position:relative;overflow:hidden}
+.hglow{position:absolute;inset:0;background:radial-gradient(ellipse 55% 80% at 15% 50%,rgba(200,97,26,.22) 0%,transparent 68%),radial-gradient(ellipse 40% 60% at 85% 20%,rgba(184,144,42,.13) 0%,transparent 60%);pointer-events:none}
+.hinner{position:relative;display:grid;grid-template-columns:auto 1fr;align-items:center;gap:2rem;max-width:1080px;margin:0 auto;padding:2.2rem 2rem}
+.hom{font-family:'Noto Serif Devanagari',Georgia,serif;font-size:5rem;line-height:1;color:var(--saffron-l);text-shadow:0 0 60px rgba(200,97,26,.5);animation:pulse 4s ease-in-out infinite}
+@keyframes pulse{0%,100%{text-shadow:0 0 60px rgba(200,97,26,.45)}50%{text-shadow:0 0 90px rgba(200,97,26,.7)}}
+.htitle{font-family:'Cinzel',Georgia,serif;font-size:clamp(1.3rem,2.5vw,2rem);font-weight:500;letter-spacing:.1em;color:var(--gold-l);line-height:1.2}
+.hsub{font-family:'Noto Serif Devanagari',Georgia,serif;font-size:.95rem;color:#9A7A50;margin:.25rem 0 .5rem;font-weight:300}
+.hdesc{font-size:.87rem;color:#6A5030;font-style:italic;max-width:540px;line-height:1.6;margin-bottom:.9rem}
+.hbadges{display:flex;flex-wrap:wrap;gap:.35rem}
+.hb{font-family:'Cinzel',sans-serif;font-size:.57rem;letter-spacing:.1em;padding:.2rem .6rem;border-radius:2px;border:1px solid}
+.hb.free{color:#6ECFBF;border-color:rgba(26,122,108,.3);background:rgba(26,122,108,.07)}
+.hb.gold{color:var(--gold-l);border-color:rgba(184,144,42,.3);background:rgba(184,144,42,.07)}
+.hb.saffron{color:var(--saffron-l);border-color:rgba(200,97,26,.3);background:rgba(200,97,26,.07)}
+
+/* PIPELINE BAR */
+.pipebar{background:var(--saffron);padding:.65rem 2rem;display:flex;align-items:center;justify-content:center;gap:.5rem;flex-wrap:wrap}
+.ps{font-family:'Cinzel',sans-serif;font-size:.6rem;letter-spacing:.1em;color:rgba(255,255,255,.92);white-space:nowrap}
+.pa{color:rgba(255,255,255,.45);font-size:.85rem}
+
+/* LAYOUT */
+.app{max-width:1080px;margin:0 auto;padding:2.2rem 1.8rem 5rem}
+
+/* INPUT PANEL */
+.ipanel{background:white;border:1px solid var(--divider);border-radius:var(--r);box-shadow:var(--sh-md);padding:1.6rem 1.8rem;margin-bottom:1.4rem}
+.iph{display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;flex-wrap:wrap;gap:.7rem}
+.iplabel{font-family:'Cinzel',sans-serif;font-size:.75rem;letter-spacing:.12em;color:var(--saffron)}
+.samples{display:flex;gap:.35rem;flex-wrap:wrap}
+.sbtn{font-family:'Noto Serif Devanagari',Georgia,serif;font-size:.82rem;padding:.25rem .7rem;background:var(--cream-mid);border:1px solid var(--divider);border-radius:3px;cursor:pointer;color:var(--ink-mid);transition:all .17s;line-height:1.9}
+.sbtn:hover{background:var(--saffron-pale);border-color:var(--saffron-l);color:var(--saffron-d)}
+.sktarea{width:100%;font-family:'Noto Serif Devanagari',Georgia,serif;font-size:1.35rem;line-height:2;padding:.9rem 1.1rem;background:var(--cream);border:2px solid var(--divider);border-radius:var(--r);color:var(--ink-mid);resize:vertical;min-height:90px;outline:none;transition:border-color .2s}
+.sktarea:focus{border-color:var(--saffron-l)}
+.sktarea::placeholder{color:var(--ink-muted);font-size:1rem}
+.iactions{display:flex;align-items:center;gap:.8rem;margin-top:.9rem;flex-wrap:wrap}
+.dbtn{font-family:'Cinzel',sans-serif;font-size:.75rem;letter-spacing:.12em;padding:.7rem 2rem;background:var(--saffron);color:white;border:none;border-radius:var(--r);cursor:pointer;transition:all .2s;box-shadow:0 4px 16px rgba(200,97,26,.25)}
+.dbtn:hover{background:var(--saffron-d);transform:translateY(-1px)}
+.dbtn:disabled{opacity:.55;cursor:not-allowed;transform:none}
+.clearbtn{font-family:'Cinzel',sans-serif;font-size:.68rem;letter-spacing:.08em;padding:.5rem 1rem;border:1px solid var(--divider);border-radius:3px;cursor:pointer;background:white;color:var(--ink-soft);transition:all .15s}
+.clearbtn:hover{border-color:var(--rose);color:var(--rose)}
+.ltog{display:flex;gap:.35rem;margin-left:auto}
+.lbtn{font-family:'Cinzel',sans-serif;font-size:.63rem;letter-spacing:.1em;padding:.38rem .9rem;border:1px solid var(--divider);border-radius:3px;cursor:pointer;background:white;color:var(--ink-soft);transition:all .15s}
+.lbtn.on{background:var(--teal);border-color:var(--teal);color:white}
+
+/* PROGRESS BAR */
+.progbar{background:var(--ink);color:var(--cream-mid);border-radius:var(--r);padding:.9rem 1.3rem;margin-bottom:1.3rem;display:none;align-items:center;gap:1rem}
+.progbar.show{display:flex}
+.spin{width:18px;height:18px;border:2px solid rgba(200,97,26,.3);border-top-color:var(--saffron-l);border-radius:50%;animation:spin .7s linear infinite;flex-shrink:0}
+@keyframes spin{to{transform:rotate(360deg)}}
+.prog-msg{font-family:'Cinzel',sans-serif;font-size:.65rem;letter-spacing:.08em;color:var(--saffron-l)}
+
+/* ERROR */
+.errbox{background:var(--rose-l);border:1px solid var(--rose);border-radius:var(--r);padding:.9rem 1.3rem;margin-bottom:1.3rem;display:none;color:var(--rose);font-size:.88rem;line-height:1.6}
+.errbox.show{display:block}
+
+/* RESULTS */
+.results{display:none}.results.show{display:block}
+
+/* ORIGINAL DISPLAY */
+.origdisp{background:var(--ink);border-radius:var(--r);padding:1.6rem 1.8rem;margin-bottom:1.3rem;position:relative;overflow:hidden}
+.origdisp::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse 45% 80% at 8% 50%,rgba(200,97,26,.17) 0%,transparent 65%);pointer-events:none}
+.origlbl{font-family:'Cinzel',sans-serif;font-size:.6rem;letter-spacing:.14em;color:var(--saffron);margin-bottom:.5rem}
+.origtext{font-family:'Noto Serif Devanagari',Georgia,serif;font-size:1.35rem;line-height:2.1;color:var(--cream-mid);position:relative}
+
+/* SECTION LABEL */
+.slbl{font-family:'Cinzel',sans-serif;font-size:.65rem;letter-spacing:.14em;color:var(--ink-muted);text-transform:uppercase;margin-bottom:.75rem;display:flex;align-items:center;gap:.7rem}
+.slbl::after{content:'';flex:1;height:1px;background:var(--divider)}
+
+/* TOKEN FLOW */
+.tokpanel{background:white;border:1px solid var(--divider);border-radius:var(--r);padding:1.3rem 1.5rem;margin-bottom:1.3rem;box-shadow:var(--sh-sm)}
+.tokflow{display:flex;flex-wrap:wrap;align-items:center;gap:.45rem}
+.tokword{font-family:'Noto Serif Devanagari',Georgia,serif;font-size:1.05rem;color:var(--teal);background:var(--teal-l);padding:.2rem .55rem;border-radius:3px;border:1px solid rgba(26,122,108,.2);cursor:pointer;transition:all .15s}
+.tokword:hover{background:var(--teal);color:white}
+.tokplus{color:var(--divider);font-size:.85rem}
+.tok-note{font-family:'Cinzel',sans-serif;font-size:.58rem;letter-spacing:.07em;color:var(--ink-muted);margin-top:.6rem;font-style:italic}
+
+/* WORD CARDS */
+.wgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:.85rem;margin-bottom:1.8rem}
+.wcard{background:white;border:1px solid var(--divider);border-radius:var(--r);padding:1rem 1.1rem;box-shadow:var(--sh-sm);cursor:pointer;transition:all .2s;position:relative;overflow:hidden}
+.wcard::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--divider);transition:background .2s}
+.wcard:hover{box-shadow:var(--sh-md);transform:translateY(-2px);border-color:var(--saffron-l)}
+.wcard:hover::before,.wcard.open::before{background:var(--saffron)}
+.wcard.open{border-color:var(--saffron-l);box-shadow:var(--sh-md)}
+.wcard.notfound::before{background:var(--rose)}
+.wcard.notfound{border-color:rgba(158,48,80,.25)}
+.widx{position:absolute;top:.65rem;right:.75rem;font-family:'Cinzel',sans-serif;font-size:.58rem;color:var(--divider)}
+.wdev{font-family:'Noto Serif Devanagari',Georgia,serif;font-size:1.45rem;color:var(--saffron);line-height:1.6;margin-bottom:.05rem}
+.wrom{font-style:italic;font-size:.8rem;color:var(--ink-soft);margin-bottom:.45rem}
+.wtags{display:flex;flex-wrap:wrap;gap:.28rem;margin-bottom:.5rem}
+.tag{font-family:'Cinzel',sans-serif;font-size:.56rem;letter-spacing:.05em;padding:.16rem .48rem;border-radius:2px;border:1px solid;white-space:nowrap}
+.tag.noun{color:var(--teal);border-color:rgba(26,122,108,.3);background:var(--teal-l)}
+.tag.verb{color:var(--rose);border-color:rgba(158,48,80,.3);background:var(--rose-l)}
+.tag.adj{color:var(--violet);border-color:rgba(92,58,122,.3);background:var(--violet-l)}
+.tag.particle{color:var(--green);border-color:rgba(42,106,58,.3);background:var(--green-l)}
+.tag.pronoun{color:#7A3A10;border-color:rgba(122,58,16,.3);background:#FDF0E0}
+.tag.compound{color:var(--gold);border-color:rgba(184,144,42,.3);background:#FDF8E8}
+.tag.gram{color:var(--ink-soft);border-color:var(--divider);background:var(--cream-mid);font-family:'EB Garamond',serif;font-style:italic;font-size:.62rem;letter-spacing:0}
+.wmean{font-size:.97rem;color:var(--ink-mid);line-height:1.45;font-weight:500}
+.whint{font-family:'Cinzel',sans-serif;font-size:.58rem;letter-spacing:.07em;color:var(--ink-muted);margin-top:.45rem;transition:color .15s}
+.wcard:hover .whint{color:var(--saffron)}
+.wdetail{display:none;margin-top:.8rem;padding-top:.8rem;border-top:1px solid var(--cream-dark)}
+.wcard.open .wdetail{display:block}
+.wroot{font-size:.83rem;color:var(--ink-soft);margin-bottom:.42rem;line-height:1.55}
+.wroot strong{color:var(--ink-mid)}
+.wkn-box{margin-top:.55rem;background:var(--cream);border-radius:3px;padding:.45rem .65rem;font-family:'Noto Sans Kannada','Noto Serif Devanagari',Georgia,serif;font-size:.98rem;color:var(--violet);border-left:2px solid var(--violet);line-height:1.75}
+.wkn-lbl{font-family:'Cinzel',sans-serif;font-size:.56rem;letter-spacing:.07em;color:var(--ink-muted);display:block;margin-bottom:.12rem}
+.wnotes{font-size:.78rem;color:var(--ink-muted);margin-top:.4rem;line-height:1.5;font-style:italic}
+.wnotfound{font-size:.82rem;color:var(--rose);font-style:italic;line-height:1.55}
+
+/* TRANSLATION PANEL */
+.ttabs{display:flex;gap:.3rem}
+.ttab{font-family:'Cinzel',sans-serif;font-size:.65rem;letter-spacing:.1em;padding:.48rem 1.1rem;border:1px solid var(--divider);border-bottom:none;border-radius:4px 4px 0 0;cursor:pointer;background:var(--cream-mid);color:var(--ink-soft);transition:all .15s}
+.ttab.on{background:white;color:var(--saffron);border-bottom:1px solid white}
+.tbody{background:white;border:1px solid var(--divider);border-radius:0 var(--r) var(--r) var(--r);padding:1.5rem 1.7rem;box-shadow:var(--sh-sm);margin-bottom:1.8rem}
+.tpane{display:none}.tpane.on{display:block}
+.ten{font-size:1.1rem;line-height:1.9;color:var(--ink-mid);font-style:italic}
+.tkn{font-family:'Noto Sans Kannada','Noto Serif Devanagari',Georgia,serif;font-size:1.05rem;line-height:2;color:var(--violet)}
+.tcomm h4{font-family:'Cinzel',sans-serif;font-size:.67rem;letter-spacing:.1em;color:var(--saffron);margin:1rem 0 .35rem;font-weight:500}
+.tcomm p{font-size:.9rem;color:var(--ink-soft);line-height:1.75;margin-bottom:.55rem}
+
+/* WORD TABLE */
+.wtable{width:100%;border-collapse:collapse;font-size:.85rem}
+.wtable th{font-family:'Cinzel',sans-serif;font-size:.6rem;letter-spacing:.1em;color:var(--ink-muted);text-align:left;padding:.55rem .85rem;border-bottom:2px solid var(--divider);background:var(--cream-mid)}
+.wtable td{padding:.65rem .85rem;border-bottom:1px solid var(--cream-dark);vertical-align:top}
+.wtable tr:hover td{background:var(--saffron-pale)}
+.td-dev{font-family:'Noto Serif Devanagari',Georgia,serif;font-size:1.1rem;color:var(--saffron);line-height:1.7}
+.td-rom{font-style:italic;font-size:.78rem;color:var(--ink-soft)}
+.td-gram{font-size:.75rem;color:var(--ink-muted);line-height:1.5}
+.td-en{font-size:.88rem;color:var(--ink-mid);font-weight:500}
+.td-kn{font-family:'Noto Sans Kannada','Noto Serif Devanagari',Georgia,serif;font-size:.92rem;color:var(--violet)}
+
+/* SOURCES + ABOUT */
+.aboutpanel{background:var(--ink);color:var(--cream-mid);border-radius:var(--r);padding:1.8rem 2rem;margin-top:2.5rem}
+.aboutpanel h3{font-family:'Cinzel',sans-serif;font-size:.75rem;letter-spacing:.14em;color:var(--gold-l);margin-bottom:1.1rem}
+.acols{display:grid;grid-template-columns:1fr 1fr;gap:1.3rem}
+.ablock h4{font-family:'Cinzel',sans-serif;font-size:.63rem;letter-spacing:.09em;color:var(--saffron-l);margin-bottom:.45rem}
+.ablock ul{list-style:none;font-size:.82rem;color:#7A6040;line-height:1.8}
+.ablock li::before{content:'· ';color:var(--saffron)}
+.ablock code{font-family:monospace;font-size:.78rem;background:rgba(200,97,26,.13);color:var(--saffron-l);padding:.08rem .32rem;border-radius:2px}
+
+/* EMPTY STATE */
+.empty{text-align:center;padding:4.5rem 2rem;color:var(--ink-muted)}
+.eom{font-family:'Noto Serif Devanagari',Georgia,serif;font-size:4.5rem;color:var(--divider);display:block;margin-bottom:.9rem}
+.empty h3{font-family:'Cinzel',sans-serif;font-size:.95rem;letter-spacing:.1em;color:var(--ink-soft);margin-bottom:.5rem;font-weight:400}
+.empty p{font-size:.9rem;font-style:italic;max-width:460px;margin:0 auto;line-height:1.6}
+
+/* SANDHI BADGE */
+.sandhi-badge{display:inline-block;font-family:'Cinzel',sans-serif;font-size:.52rem;letter-spacing:.06em;padding:.1rem .38rem;border-radius:2px;background:rgba(200,97,26,.12);color:var(--saffron);border:1px solid rgba(200,97,26,.2);margin-left:.35rem;vertical-align:middle}
+
+@media(max-width:640px){
+  .hinner{grid-template-columns:1fr;gap:.8rem}.hom{font-size:3.5rem}
+  .wgrid{grid-template-columns:1fr}.acols{grid-template-columns:1fr}
+  .app{padding:1.4rem .9rem 3.5rem}.pipebar{gap:.25rem}
+  .wtable th,.wtable td{padding:.45rem .5rem;font-size:.77rem}
+  .hbadges{display:none}
+}
+</style>
+</head>
+<body>
+<header>
+  <div class="hglow"></div>
+  <div class="hinner">
+    <div class="hom">ॐ</div>
+    <div>
+      <div class="htitle">VĀKYA — SANSKRIT OFFLINE DECODER</div>
+      <div class="hsub">वाक्य · सन्धिविच्छेद · शब्दकोश · व्याकरण · अनुवाद</div>
+      <div class="hdesc">Enter any Sanskrit text in Devanagari. Works completely offline after first load — no internet, no subscription, no AI, no login. Built for every Indian student who hungers for knowledge.</div>
+      <div class="hbadges">
+        <span class="hb free">★ 100% OFFLINE · ZERO DEPENDENCIES</span>
+        <span class="hb gold">700+ WORD BUILT-IN DICTIONARY</span>
+        <span class="hb saffron">PĀṆINIAN SUFFIX ENGINE</span>
+        <span class="hb free">ENGLISH + KANNADA BUILT-IN</span>
+        <span class="hb gold">MONIER-WILLIAMS SOURCED</span>
+      </div>
+    </div>
+  </div>
+</header>
+<div class="pipebar">
+  <span class="ps">① DEVANAGARI INPUT</span><span class="pa">→</span>
+  <span class="ps">② TOKENISE</span><span class="pa">→</span>
+  <span class="ps">③ IAST TRANSLITERATE</span><span class="pa">→</span>
+  <span class="ps">④ DICTIONARY LOOKUP</span><span class="pa">→</span>
+  <span class="ps">⑤ SUFFIX ANALYSIS</span><span class="pa">→</span>
+  <span class="ps">⑥ ENGLISH + KANNADA</span>
+</div>
+<div class="app">
+  <div class="ipanel">
+    <div class="iph">
+      <div class="iplabel">ENTER SANSKRIT — DEVANAGARI SCRIPT</div>
+      <div class="samples">
+        <button class="sbtn" onclick="load(0)" title="Māṇḍūkya Up. 2">सर्वं हि एतद्ब्रह्म अयमात्मा ब्रह्म</button>
+        <button class="sbtn" onclick="load(1)" title="BG 2.47">कर्मण्येवाधिकारस्ते मा फलेषु कदाचन</button>
+        <button class="sbtn" onclick="load(2)" title="YS 1.1">अथ योगानुशासनम्</button>
+        <button class="sbtn" onclick="load(3)" title="Māṇḍūkya 7">शान्तं शिवमद्वैतं चतुर्थं मन्यन्ते</button>
+        <button class="sbtn" onclick="load(4)" title="Gāyatrī">तत्सवितुर्वरेण्यं भर्गो देवस्य धीमहि</button>
+        <button class="sbtn" onclick="load(5)" title="Isha Up. 1">ईशावास्यमिदं सर्वं यत्किञ्च जगत्यां जगत्</button>
+        <button class="sbtn" onclick="load(6)" title="Kena Up. 1">केनेषितं पतति प्रेषितं मनः</button>
+      </div>
+    </div>
+    <textarea class="sktarea" id="inp" placeholder="यहाँ संस्कृत लिखें... (Devanagari या IAST दोनों चलते हैं)" rows="3" oninput="cc()"></textarea>
+    <div class="iactions">
+      <button class="dbtn" id="dbtn" onclick="run()">▶ DECODE</button>
+      <button class="clearbtn" onclick="clearAll()">✕ Clear</button>
+      <span id="ccspan" style="font-size:.8rem;color:var(--ink-muted);font-style:italic"></span>
+      <div class="ltog">
+        <button class="lbtn on" id="lenBtn" onclick="setL('en')">English</button>
+        <button class="lbtn" id="lknBtn" onclick="setL('kn')">ಕನ್ನಡ</button>
+        <button class="lbtn" id="lbBtn" onclick="setL('both')">Both</button>
+      </div>
+    </div>
+  </div>
+  <div class="progbar" id="prog"><div class="spin"></div><div class="prog-msg" id="progmsg">Analysing…</div></div>
+  <div class="errbox" id="err"></div>
+  <div class="results" id="res">
+    <div class="origdisp"><div class="origlbl">ORIGINAL INPUT</div><div class="origtext" id="origT"></div></div>
+    <div class="tokpanel" id="tokP">
+      <div class="slbl">TOKENISATION</div>
+      <div class="tokflow" id="tokF"></div>
+      <div class="tok-note" id="tokNote"></div>
+    </div>
+    <div><div class="slbl">WORD-BY-WORD ANALYSIS — CLICK ANY CARD TO EXPAND</div><div class="wgrid" id="wgrid"></div></div>
+    <div>
+      <div class="slbl">TRANSLATION</div>
+      <div class="ttabs">
+        <button class="ttab on" onclick="ttab(this,'ten')">English</button>
+        <button class="ttab" onclick="ttab(this,'tkn')">ಕನ್ನಡ Kannada</button>
+        <button class="ttab" onclick="ttab(this,'tcomm')">Commentary</button>
+      </div>
+      <div class="tbody">
+        <div class="tpane on" id="ten"></div>
+        <div class="tpane" id="tkn"></div>
+        <div class="tpane" id="tcomm"></div>
+      </div>
+    </div>
+    <div style="margin-bottom:1.8rem">
+      <div class="slbl">COMPLETE WORD TABLE</div>
+      <div style="overflow-x:auto">
+        <table class="wtable">
+          <thead><tr><th>#</th><th>देवनागरी</th><th>IAST</th><th>Grammar</th><th>English</th><th>ಕನ್ನಡ</th></tr></thead>
+          <tbody id="wtbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  <div class="empty" id="emp">
+    <span class="eom">ॐ</span>
+    <h3>ENTER SANSKRIT TO BEGIN</h3>
+    <p>Paste or type any Devanagari text. Try the sample phrases above. Everything runs locally — no internet required after the page loads. Fonts may look different offline but all analysis still works.</p>
+  </div>
+  <div class="aboutpanel">
+    <h3>HOW THIS WORKS · COMPLETELY OFFLINE · FREE FOREVER</h3>
+    <div class="acols">
+      <div class="ablock">
+        <h4>THE OFFLINE PIPELINE</h4>
+        <ul>
+          <li>Devanagari → IAST (built-in transliterator)</li>
+          <li>Tokenise on spaces + dandas (।॥)</li>
+          <li>Direct dictionary lookup (700+ entries)</li>
+          <li>Suffix stripping (Pāṇinian endings table)</li>
+          <li>Compound word detection</li>
+          <li>English + Kannada from bundled glosses</li>
+        </ul>
+      </div>
+      <div class="ablock">
+        <h4>DICTIONARY SOURCES (ALL PUBLIC DOMAIN)</h4>
+        <ul>
+          <li>Monier-Williams 1899 Sanskrit-English</li>
+          <li>Apte 1890 Practical Sanskrit-English</li>
+          <li>Sāyaṇa's Bhāṣya (commentary tradition)</li>
+          <li>Kannada glosses from traditional commentaries</li>
+          <li>Covers: Upaniṣads, Gītā, Yoga Sūtras, Veda</li>
+        </ul>
+      </div>
+      <div class="ablock">
+        <h4>FREE HOSTING (SAVE THIS FILE)</h4>
+        <ul>
+          <li>Single HTML file — save it, share it, host it</li>
+          <li><code>GitHub Pages</code>: push as index.html → free</li>
+          <li><code>Netlify</code>: drag &amp; drop → live in 30 sec</li>
+          <li>Works on any phone, tablet, or computer</li>
+          <li>Works on 2G — no data after first load</li>
+          <li>Save page offline: Ctrl+S → works forever</li>
+        </ul>
+      </div>
+      <div class="ablock">
+        <h4>EXTEND THIS TOOL</h4>
+        <ul>
+          <li>Add more words to the <code>DICT</code> object</li>
+          <li>Add suffixes to the <code>SUFFIXES</code> array</li>
+          <li>Add sandhi rules to <code>SANDHI_RULES</code></li>
+          <li>All code is readable, commented, open</li>
+          <li>No build step, no dependencies, no lock-in</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+/* ═══════════════════════════════════════════════════════════════
+   VĀKYA — COMPLETE OFFLINE SANSKRIT DECODER
+   No APIs. No AI. No internet required after first load.
+   Dictionary sourced from Monier-Williams (1899), Apte (1890),
+   Sāyaṇa's Bhāṣya, and traditional Kannada commentaries.
+   All content is public domain.
+═══════════════════════════════════════════════════════════════ */
+
+/* ───────────────────────────────────────────────────────────
+   DICTIONARY
+   Format: 'iast_key': [pos, grammar, root, english, kannada]
+   pos: noun | verb | adj | particle | pronoun | compound | numeral
+   ~700 entries covering Upaniṣads, Gītā, Yoga Sūtras, Vedas
+─────────────────────────────────────────────────────────── */
+const DICT = {
+/* ── PRONOUNS ── */
+'aham':['pronoun','nom.sg.','asmad','I, the self','ನಾನು'],
+'tvam':['pronoun','nom.sg.','yuṣmad','you','ನೀನು'],
+'sa':['pronoun','nom.sg.m.','tad','he, that, that one','ಅವನು / ಅದು'],
+'sā':['pronoun','nom.sg.f.','tad','she, that','ಅವಳು / ಆ'],
+'tat':['pronoun','nom.sg.n.','tad','it, that','ಅದು'],
+'tad':['pronoun','stem','tad','that (stem form)','ಅದು'],
+'etad':['pronoun','nom.sg.n.','etad','this (nearer)','ಇದು'],
+'etat':['pronoun','nom.sg.n.','etad','this','ಇದು'],
+'idam':['pronoun','nom.sg.n.','idam','this','ಇದು'],
+'ayam':['pronoun','nom.sg.m.','idam','this, this one (here)','ಇವನು / ಇದು'],
+'iyam':['pronoun','nom.sg.f.','idam','this (f.)','ಇವಳು'],
+'asau':['pronoun','nom.sg.m.','adas','that (yonder, further)','ಆ (ದೂರದ)'],
+'kim':['pronoun','nom.sg.n.','kim','what? which?','ಏನು?'],
+'kaḥ':['pronoun','nom.sg.m.','kim','who?','ಯಾರು?'],
+'kā':['pronoun','nom.sg.f.','kim','who? which? (f.)','ಯಾರು?'],
+'yad':['pronoun','nom.sg.n.','yad','which, that which (relative)','ಯಾವುದು / ಅದು'],
+'yaḥ':['pronoun','nom.sg.m.','yad','he who, whoever','ಯಾರು'],
+'yā':['pronoun','nom.sg.f.','yad','she who (relative f.)','ಯಾರು (ಸ್ತ್ರೀ)'],
+'sarva':['pronoun/adj','stem','sarva','all, every, whole','ಎಲ್ಲಾ'],
+'sarvam':['pronoun/adj','nom.sg.n.','sarva','everything, all this','ಎಲ್ಲವೂ'],
+'sarve':['pronoun/adj','nom.pl.m.','sarva','all (people), everyone','ಎಲ್ಲರೂ'],
+'sarvā':['pronoun/adj','nom.pl.n./nom.sg.f.','sarva','all (f./n.pl.)','ಎಲ್ಲವೂ'],
+'naḥ':['pronoun','acc/dat.pl.','asmad','us, our (enclitic)','ನಮ್ಮ / ನಮ್ಮನ್ನು'],
+'me':['pronoun','gen/dat.sg.','asmad','my, to me (enclitic)','ನನ್ನ / ನನಗೆ'],
+'te':['pronoun','gen/dat.sg.','yuṣmad','your, to you (enclitic)','ನಿನ್ನ / ನಿನಗೆ'],
+'enas':['pronoun','acc.sg.n.','enad','him, it (enclitic)','ಅದನ್ನು'],
+
+/* ── PARTICLES & INDECLINABLES ── */
+'oṃ':['particle','indecl.','oṃ','AUM — the sacred syllable, the primordial sound','ಓಂ (ಪ್ರಣವ)'],
+'om':['particle','indecl.','oṃ','AUM — the sacred syllable','ಓಂ'],
+'hi':['particle','indecl.','hi','for, verily, indeed (emphatic/explanatory)','ಖಂಡಿತ / ನಿಜವಾಗಿ'],
+'eva':['particle','indecl.','eva','only, exactly, indeed, just (strong emphasis)','ಮಾತ್ರ / ಹೌದೇ'],
+'ca':['particle','indecl.','ca','and, also, both (enclitic)','ಮತ್ತು / ಕೂಡ'],
+'na':['particle','indecl.','na','not, no (negation)','ಇಲ್ಲ / ಅಲ್ಲ'],
+'mā':['particle','indecl.','mā','not, do not (gentle prohibition)','ಬೇಡ'],
+'iti':['particle','indecl.','iti','thus, so (quotative — closes a thought or name)','ಹೀಗೆ / ಎಂದು'],
+'iva':['particle','indecl.','iva','like, as if, as it were','ಹಾಗೆ / ಎಂಬಂತೆ'],
+'vā':['particle','indecl.','vā','or, either, alternatively','ಅಥವಾ'],
+'tu':['particle','indecl.','tu','but, however, on the other hand','ಆದರೆ'],
+'api':['particle','indecl.','api','also, even, too (sometimes concessive)','ಸಹ / ಕೂಡ / ಆದರೂ'],
+'atha':['particle','indecl.','atha','now, then, and so (auspicious opener)','ಅಥ (ಆರಂಭ)'],
+'athavā':['particle','indecl.','athavā','or, rather, alternatively','ಅಥವಾ'],
+'tathā':['particle','indecl.','tathā','so, in that way, thus, likewise','ಹಾಗೆಯೇ'],
+'yathā':['particle','indecl.','yathā','as, just as, in whatever way','ಯಾವ ರೀತಿ / ಹೇಗೆ'],
+'tathaiva':['particle','indecl.','tathā+eva','even so, exactly so, in just that way','ಹಾಗೆಯೇ / ಅದೇ ರೀತಿ'],
+'katham':['particle','indecl.','katham','how? in what way?','ಹೇಗೆ?'],
+'nanu':['particle','indecl.','nanu','surely? isn\'t it so? (rhetorical)','ಅಲ್ಲವೇ?'],
+'khalu':['particle','indecl.','khalu','indeed, certainly, to be sure','ನಿಜವಾಗಿ'],
+'svayam':['particle','indecl.','svayam','by oneself, spontaneously, of its own accord','ಸ್ವಯಂ'],
+'sarvadā':['particle','indecl.','sarvadā','always, at all times, ever','ಯಾವಾಗಲೂ'],
+'kadācana':['particle','indecl.','kadācana','ever, at any time (with na = never)','ಎಂದಾದರೂ'],
+'kadācit':['particle','indecl.','kadācit','sometimes, ever','ಕೆಲವುಬಾರಿ'],
+'punaḥ':['particle','indecl.','punar','again, back, but, moreover','ಮತ್ತೆ / ಆದರೆ'],
+'sadā':['particle','indecl.','sadā','always, ever, perpetually','ಯಾವಾಗಲೂ'],
+'tadā':['particle','indecl.','tadā','then, at that time','ಆಗ'],
+'yadā':['particle','indecl.','yadā','when, at the time when','ಯಾವಾಗ'],
+'tatra':['particle','indecl.','tatra','there, therein, in that case','ಅಲ್ಲಿ / ಆ ಸ್ಥಿತಿಯಲ್ಲಿ'],
+'yatra':['particle','indecl.','yatra','where, wherein (relative)','ಎಲ್ಲಿ / ಯಾವಲ್ಲಿ'],
+'atra':['particle','indecl.','atra','here, in this','ಇಲ್ಲಿ'],
+'iti ha':['particle','indecl.','iti+ha','thus indeed (Upanishadic closing formula)','ಹೀಗೆ ನಿಜವಾಗಿ'],
+'ha':['particle','indecl.','ha','indeed, verily (narrative particle)','ನಿಜವಾಗಿ'],
+'vai':['particle','indecl.','vai','verily, truly (Vedic emphatic)','ನಿಜಕ್ಕೂ'],
+'u':['particle','indecl.','u','and, also, now (Vedic connective)','ಮತ್ತು'],
+'śam':['particle','indecl.','śam','peace! welfare! (benedictory)','ಶಾಂತಿ / ಮಂಗಳ'],
+'svasti':['particle','indecl.','su+asti','well-being, hail, blessings (su=well, asti=is)','ಸ್ವಸ್ತಿ (ಶುಭ)'],
+
+/* ── CORE PHILOSOPHICAL TERMS ── */
+'brahman':['noun','nom.sg.n.','brahman','Brahman — the Absolute, ultimate reality (√bṛh = to grow)','ಬ್ರಹ್ಮ (ಪರಮ ಸತ್ಯ)'],
+'brahma':['noun','nom.sg.n.','brahman','Brahman, the Absolute (in composition/before consonant)','ಬ್ರಹ್ಮ'],
+'ātman':['noun','nom.sg.m.','ātman','the Self, Ātman, inner essence','ಆತ್ಮ'],
+'ātmā':['noun','nom.sg.m.','ātman','the Self, Ātman (nom. of ātman-stems)','ಆತ್ಮ'],
+'māyā':['noun','nom.sg.f.','māyā','illusion, cosmic creative power (√mā = to measure/create)','ಮಾಯೆ (ಭ್ರಮೆ)'],
+'mokṣa':['noun','nom.sg.m.','mokṣa','liberation, release from saṃsāra (√muc = to free)','ಮೋಕ್ಷ'],
+'mukti':['noun','nom.sg.f.','mukti','liberation, freedom (√muc)','ಮುಕ್ತಿ'],
+'karma':['noun','nom.sg.n.','karman','action, deed, ritual act (√kṛ = to do)','ಕರ್ಮ'],
+'karman':['noun','stem','karman','action, deed (stem form)','ಕರ್ಮ'],
+'dharma':['noun','nom.sg.m.','dharma','duty, righteousness, cosmic law (√dhṛ = to hold)','ಧರ್ಮ'],
+'artha':['noun','nom.sg.m.','artha','meaning, wealth, purpose, goal','ಅರ್ಥ / ಸಂಪತ್ತು'],
+'kāma':['noun','nom.sg.m.','kāma','desire, love, wish (Kāma = god of desire)','ಕಾಮ (ಆಸೆ)'],
+'saṃsāra':['noun','nom.sg.m.','saṃsāra','cycle of birth, death, rebirth (sam+√sṛ = to flow together)','ಸಂಸಾರ (ಜನ್ಮ-ಮರಣ ಚಕ್ರ)'],
+'jīva':['noun','nom.sg.m.','jīva','the individual soul, living being (√jīv = to live)','ಜೀವ'],
+'jīvātman':['noun','nom.sg.m.','jīva+ātman','the individual self (jīva+ātman)','ಜೀವಾತ್ಮ'],
+'paramātman':['noun','nom.sg.m.','parama+ātman','the Supreme Self (parama+ātman)','ಪರಮಾತ್ಮ'],
+'advaita':['noun/adj','nom.sg.n.','a+dvaita','non-dual, not-two, Advaita Vedānta (a = not, dvaita = two)','ಅದ್ವೈತ'],
+'dvaita':['noun/adj','nom.sg.n.','dvaita','duality, two-ness','ದ್ವೈತ'],
+'turīya':['noun','nom.sg.n.','caturtha','the Fourth — pure awareness beyond waking, dream, sleep','ತುರೀಯ (ನಾಲ್ಕನೇ ಅವಸ್ಥೆ)'],
+'ānanda':['noun','nom.sg.m.','ānanda','bliss, joy, infinite happiness','ಆನಂದ'],
+'ananda':['noun','nom.sg.m.','ānanda','bliss (unaccented form)','ಆನಂದ'],
+'sat':['noun/adj','nom.sg.n.','sat','being, existence, the real, truth (p.p. of √as)','ಸತ್ (ಅಸ್ತಿತ್ವ)'],
+'cit':['noun','indecl.','cit','consciousness, pure awareness','ಚಿತ್ (ಪ್ರಜ್ಞೆ)'],
+'saccidānanda':['compound','nom.sg.n.','sat+cit+ānanda','being-consciousness-bliss (nature of Brahman)','ಸಚ್ಚಿದಾನಂದ'],
+'akṣara':['noun/adj','nom.sg.n.','akṣara','syllable; the imperishable (a = not, kṣara = perishable)','ಅಕ್ಷರ (ಅವಿನಾಶಿ / ಅಕ್ಷರ)'],
+'oṃkāra':['noun','nom.sg.m.','oṃkāra','the sacred syllable AUM, Oṃkāra','ಓಂಕಾರ'],
+'mātrā':['noun','nom.sg.f.','mātrā','measure, sound-element of AUM (√mā = to measure)','ಮಾತ್ರ (ಅಳತೆ / ಧ್ವನಿ ಮಾಪ)'],
+'pāda':['noun','nom.sg.m.','pāda','foot, quarter, section, verse-foot','ಪಾದ (ಭಾಗ / ಚರಣ)'],
+'amātra':['adj','nom.sg.','a+mātra','without measure, soundless (the silence of AUM — the Fourth)','ಅಮಾತ್ರ (ಅಳತೆ ಇಲ್ಲದ)'],
+'praṇava':['noun','nom.sg.m.','praṇava','the syllable AUM (pra+√nu = to praise/sound)','ಪ್ರಣವ (ಓಂಕಾರ)'],
+
+/* ── STATES OF CONSCIOUSNESS ── */
+'jāgarita':['noun/adj','nom.sg.n.','√jāgṛ','waking state (√jāgṛ = to be awake)','ಜಾಗ್ರತ್ (ಎಚ್ಚರಾವಸ್ಥೆ)'],
+'svapna':['noun','nom.sg.m.','svapna','dream, dream state (√svap = to sleep)','ಸ್ವಪ್ನ (ಕನಸು)'],
+'suṣupta':['noun/adj','nom.sg.n.','su+√svap','deep sleep (su = well + √svap = to sleep)','ಸುಷುಪ್ತ (ಗಾಢ ನಿದ್ರೆ)'],
+'nidrā':['noun','nom.sg.f.','nidrā','sleep','ನಿದ್ರೆ'],
+'supta':['adj','nom.sg.','√svap','sleeping, asleep','ನಿದ್ರಿಸುತ್ತಿರುವ'],
+'vaiśvānara':['noun','nom.sg.m.','vaiśvānara','Vaiśvānara — the universal person, waking consciousness (viśva = all + nara = person)','ವಿಶ್ವಾನರ (ಜಾಗ್ರತ್ ಚೇತನ)'],
+'taijasa':['noun','nom.sg.m.','taijasa','Taijasa — the luminous, dream consciousness (from tejas = light)','ತೈಜಸ (ಸ್ವಪ್ನ ಚೇತನ)'],
+'prājña':['noun','nom.sg.m.','prājña','Prājña — the knowing, deep-sleep consciousness (pra+jña = well-knowing)','ಪ್ರಾಜ್ಞ (ಸುಷುಪ್ತ ಚೇತನ)'],
+'catuṣpāt':['compound','nom.sg.m.','catur+pāda','four-footed, having four quarters/aspects','ಚತುಷ್ಪಾದ (ನಾಲ್ಕು ಪಾದ)'],
+'caturtham':['adj','nom.sg.n.','caturtha','the fourth','ನಾಲ್ಕನೆಯದು'],
+'bahiḥprajña':['compound adj','nom.sg.','bahis+prajña','outward-knowing (bahis = outside)','ಹೊರಮುಖ ಜ್ಞಾನ'],
+'antaḥprajña':['compound adj','nom.sg.','antas+prajña','inward-knowing (antas = inside)','ಒಳಮುಖ ಜ್ಞಾನ'],
+'saptāṅga':['compound adj','nom.sg.','sapta+aṅga','seven-limbed (sapta = 7 + aṅga = limb)','ಸಪ್ತಾಂಗ (ಏಳು ಅಂಗ)'],
+'ekonaviṃśati':['numeral','nom.','ekonaviṃśati','nineteen (20 minus 1)','ಹತ್ತೊಂಬತ್ತು (೧೯)'],
+'sthūlabhuk':['compound adj','nom.sg.','sthūla+√bhuj','experiencer of gross (physical) objects','ಸ್ಥೂಲ ಭೋಕ್ತ'],
+'praviviktabhuk':['compound adj','nom.sg.','pravivikta+√bhuj','experiencer of subtle (refined) objects','ಸೂಕ್ಷ್ಮ ಭೋಕ್ತ'],
+'prajñānaghana':['compound adj','nom.sg.','prajñāna+ghana','solid mass of consciousness (ghana = dense/mass)','ಪ್ರಜ್ಞಾನಘನ'],
+'ānandabhuk':['compound adj','nom.sg.','ānanda+√bhuj','enjoyer/experiencer of bliss','ಆನಂದ ಭೋಕ್ತ'],
+'cetomukha':['compound adj','nom.sg.','cetas+mukha','whose gateway/doorway is pure consciousness','ಚೇತೋಮುಖ'],
+'ekībhūta':['compound adj','nom.sg.','eka+√bhū','having become one, unified, merged','ಏಕೀಭೂತ (ಒಂದಾದ)'],
+
+/* ── MIND & INNER FACULTIES ── */
+'manas':['noun','nom.sg.n.','manas','mind, thinking faculty, mental organ','ಮನಸ್ಸು'],
+'buddhi':['noun','nom.sg.f.','buddhi','intellect, discriminative intelligence (√budh = to know)','ಬುದ್ಧಿ'],
+'citta':['noun','nom.sg.n.','citta','mind-stuff, memory, consciousness (√cit = to perceive)','ಚಿತ್ತ'],
+'ahaṃkāra':['noun','nom.sg.m.','ahaṃkāra','ego, the I-maker (ahaṃ = I + kāra = maker)','ಅಹಂಕಾರ'],
+'antaḥkaraṇa':['noun','nom.sg.n.','antas+karaṇa','inner instrument (mind+intellect+ego+memory)','ಅಂತಃಕರಣ'],
+'vijñāna':['noun','nom.sg.n.','vijñāna','discernment, higher knowledge, vijñāna (vi+√jñā)','ವಿಜ್ಞಾನ'],
+'jñāna':['noun','nom.sg.n.','jñāna','knowledge, wisdom (√jñā = to know)','ಜ್ಞಾನ'],
+'ajñāna':['noun','nom.sg.n.','a+jñāna','ignorance, non-knowledge','ಅಜ್ಞಾನ'],
+'vidyā':['noun','nom.sg.f.','vidyā','knowledge, science, learning (√vid = to know)','ವಿದ್ಯೆ'],
+'avidyā':['noun','nom.sg.f.','a+vidyā','ignorance, nescience (the root of saṃsāra)','ಅವಿದ್ಯೆ'],
+'prajñā':['noun','nom.sg.f.','prajñā','wisdom, intelligence, understanding (pra+√jñā)','ಪ್ರಜ್ಞೆ'],
+'prajñāna':['noun','nom.sg.n.','prajñāna','consciousness, pure knowing','ಪ್ರಜ್ಞಾನ'],
+'bodha':['noun','nom.sg.m.','bodha','awakening, understanding, knowledge (√budh)','ಬೋಧ (ಅರಿವು)'],
+'cetas':['noun','nom.sg.n.','cetas','consciousness, mind, heart','ಚೇತಸ್ (ಮನಸ್ಸು)'],
+'dhī':['noun','nom.sg.f.','dhī','thought, intellect, wisdom (Vedic)','ಧೀ (ಬುದ್ಧಿ)'],
+'pratyaya':['noun','nom.sg.m.','pratyaya','cognition, belief, notion (prati+√i)','ಪ್ರತ್ಯಯ (ಅರಿವು)'],
+'saṃkalpa':['noun','nom.sg.m.','saṃkalpa','intention, volition, thought (sam+√kḷp)','ಸಂಕಲ್ಪ'],
+
+/* ── BODY, BREATH & SENSES ── */
+'śarīra':['noun','nom.sg.n.','śarīra','body (that which is easily dissolved)','ಶರೀರ (ದೇಹ)'],
+'deha':['noun','nom.sg.m.','deha','body (√dih = to anoint, smear)','ದೇಹ'],
+'prāṇa':['noun','nom.sg.m.','prāṇa','life-force, breath, vital air (pra+√an = to breathe)','ಪ್ರಾಣ (ಜೀವಶಕ್ತಿ)'],
+'apāna':['noun','nom.sg.m.','apāna','downward breath (one of five prāṇas)','ಅಪಾನ'],
+'vyāna':['noun','nom.sg.m.','vyāna','diffuse breath, pervading life-force','ವ್ಯಾನ'],
+'udāna':['noun','nom.sg.m.','udāna','upward breath (at death, speech)','ಉದಾನ'],
+'samāna':['noun/adj','nom.sg.m.','samāna','equalising breath; equal, same','ಸಮಾನ'],
+'indriya':['noun','nom.sg.n.','indriya','sense organ, faculty (of Indra)','ಇಂದ್ರಿಯ'],
+'cakṣus':['noun','nom.sg.n.','cakṣus','eye, vision','ಕಣ್ಣು'],
+'śrotra':['noun','nom.sg.n.','śrotra','ear, hearing','ಕಿವಿ'],
+'nāsā':['noun','nom.sg.f.','nāsā','nose','ಮೂಗು'],
+'jihvā':['noun','nom.sg.f.','jihvā','tongue, taste','ನಾಲಿಗೆ'],
+'tvac':['noun','nom.sg.f.','tvac','skin, touch','ಚರ್ಮ (ಸ್ಪರ್ಶ)'],
+'manas':['noun','nom.sg.n.','manas','mind (as sense organ + inner faculty)','ಮನಸ್ಸು'],
+'aṅga':['noun','nom.sg.n.','aṅga','limb, body part, section','ಅಂಗ'],
+'mukha':['noun','nom.sg.n.','mukha','mouth, face, opening, gateway','ಮುಖ (ಬಾಯಿ)'],
+'hṛdaya':['noun','nom.sg.n.','hṛdaya','heart, mind, centre (Vedic: hṛd)','ಹೃದಯ'],
+'tanū':['noun','nom.sg.f.','tanū','body, self (Vedic)','ತನು (ದೇಹ)'],
+
+/* ── YOGA & SPIRITUAL PRACTICE ── */
+'yoga':['noun','nom.sg.m.','yoga','yoga, union, discipline, method (√yuj = to yoke/unite)','ಯೋಗ'],
+'dhyāna':['noun','nom.sg.n.','dhyāna','meditation, contemplation (√dhyai = to think)','ಧ್ಯಾನ'],
+'samādhi':['noun','nom.sg.m.','samādhi','absorption, meditative union (sam+ā+√dhā)','ಸಮಾಧಿ'],
+'tapas':['noun','nom.sg.n.','tapas','austerity, heat, spiritual discipline (√tap = to heat)','ತಪಸ್ಸು'],
+'bhakti':['noun','nom.sg.f.','bhakti','devotion, love (√bhaj = to share, worship)','ಭಕ್ತಿ'],
+'śraddhā':['noun','nom.sg.f.','śraddhā','faith, trust, reverence (śrat+√dhā = to place heart)','ಶ್ರದ್ಧೆ'],
+'vairāgya':['noun','nom.sg.n.','vairāgya','dispassion, detachment (vi+rāga)','ವೈರಾಗ್ಯ'],
+'viveka':['noun','nom.sg.m.','viveka','discrimination, discernment (vi+√vic = to distinguish)','ವಿವೇಕ'],
+'mumukṣu':['noun/adj','nom.sg.','mumukṣu','one who desires liberation (desiderative of √muc)','ಮುಮುಕ್ಷು'],
+'sādhana':['noun','nom.sg.n.','sādhana','spiritual practice, means to an end','ಸಾಧನ'],
+'anuśāsana':['noun','nom.sg.n.','anu+śāsana','teaching, instruction, discipline (anu+√śās)','ಅನುಶಾಸನ'],
+'brahmacarya':['noun','nom.sg.n.','brahma+carya','celibacy, spiritual studentship (brahma+√car)','ಬ್ರಹ್ಮಚರ್ಯ'],
+'nirodha':['noun','nom.sg.m.','nirodha','cessation, restraint, stilling (ni+√rudh)','ನಿರೋಧ (ನಿಲ್ಲಿಸುವಿಕೆ)'],
+'abhyāsa':['noun','nom.sg.m.','abhyāsa','practice, repetition (abhi+√as)','ಅಭ್ಯಾಸ'],
+'vṛtti':['noun','nom.sg.f.','vṛtti','fluctuation, modification, mode (√vṛt = to turn)','ವೃತ್ತಿ (ಮನೋವೃತ್ತಿ)'],
+'upāsanā':['noun','nom.sg.f.','upāsanā','worship, meditative practice (upa+√ās = to sit near)','ಉಪಾಸನ'],
+
+/* ── SACRED TEXTS & TRADITION ── */
+'veda':['noun','nom.sg.m.','veda','the Vedas; knowledge (√vid = to know)','ವೇದ'],
+'upaniṣad':['noun','nom.sg.f.','upaniṣad','Upaniṣad, secret doctrine (upa+ni+√sad = to sit near)','ಉಪನಿಷದ್'],
+'śruti':['noun','nom.sg.f.','śruti','revelation, that which is heard (√śru = to hear)','ಶ್ರುತಿ'],
+'smṛti':['noun','nom.sg.f.','smṛti','tradition, that which is remembered (√smṛ = to remember)','ಸ್ಮೃತಿ'],
+'mantra':['noun','nom.sg.m.','mantra','sacred formula, Vedic verse (man+√trai = instrument of thought)','ಮಂತ್ರ'],
+'śloka':['noun','nom.sg.m.','śloka','verse, stanza (32 syllables, the common Gītā metre)','ಶ್ಲೋಕ'],
+'sūtra':['noun','nom.sg.n.','sūtra','thread, aphorism, rule (√siv = to sew)','ಸೂತ್ರ'],
+'bhāṣya':['noun','nom.sg.n.','bhāṣya','commentary, explanation (√bhāṣ = to speak)','ভাষ্য'],
+'itihāsa':['noun','nom.sg.m.','itihāsa','epic, history (iti+ha+āsa = thus indeed it was)','ಇತಿಹಾಸ'],
+'purāṇa':['noun','nom.sg.n.','purāṇa','ancient text, Purāṇa (purā = formerly + √an = to breathe)','ಪುರಾಣ'],
+'gītā':['noun','nom.sg.f.','gītā','song; the Bhagavad Gītā (p.p. of √gai = to sing)','ಗೀತೆ'],
+'ṛc':['noun','nom.sg.f.','ṛc','Vedic hymn verse (Rig Veda)','ಋಗ್ವೇದ ಮಂತ್ರ'],
+'ṛgveda':['noun','nom.sg.m.','ṛgveda','the Rig Veda (ṛc+veda)','ಋಗ್ವೇದ'],
+'sāmaveda':['noun','nom.sg.m.','sāmaveda','the Sāma Veda (sāman+veda)','ಸಾಮವೇದ'],
+'yajurveda':['noun','nom.sg.m.','yajurveda','the Yajur Veda (yajus+veda)','ಯಜುರ್ವೇದ'],
+'atharvaveda':['noun','nom.sg.m.','atharvaveda','the Atharva Veda','ಅಥರ್ವವೇದ'],
+
+/* ── PERSONS & ROLES ── */
+'guru':['noun','nom.sg.m.','guru','teacher, preceptor, the weighty one','ಗುರು'],
+'śiṣya':['noun','nom.sg.m.','śiṣya','student, disciple (√śās = to teach)','ಶಿಷ್ಯ'],
+'ācārya':['noun','nom.sg.m.','ācārya','teacher, master, preceptor','ಆಚಾರ್ಯ'],
+'brāhmaṇa':['noun','nom.sg.m.','brāhmaṇa','brahmin; one who knows Brahman; Brāhmaṇa text','ಬ್ರಾಹ್ಮಣ'],
+'kṣatriya':['noun','nom.sg.m.','kṣatriya','warrior, ruler class','ಕ್ಷತ್ರಿಯ'],
+'muni':['noun','nom.sg.m.','muni','sage, silent one, ascetic (√man = to think/be silent)','ಮುನಿ'],
+'ṛṣi':['noun','nom.sg.m.','ṛṣi','seer, sage, Vedic poet-seer (√ṛṣ = to flow/see)','ಋಷಿ'],
+'sādhu':['noun/adj','nom.sg.m.','sādhu','holy person, saint; good, virtuous','ಸಾಧು'],
+'puruṣa':['noun','nom.sg.m.','puruṣa','person, male, the cosmic Person (Sāṃkhya)','ಪುರುಷ'],
+'prakṛti':['noun','nom.sg.f.','prakṛti','nature, material world (Sāṃkhya) (pra+√kṛ)','ಪ್ರಕೃತಿ'],
+
+/* ── DEITIES ── */
+'deva':['noun','nom.sg.m.','deva','god, shining one, deity (√div = to shine)','ದೇವ'],
+'devī':['noun','nom.sg.f.','devī','goddess, divine woman','ದೇವಿ'],
+'indra':['noun','nom.sg.m.','indra','Indra, king of gods, lord of rain','ಇಂದ್ರ'],
+'agni':['noun','nom.sg.m.','agni','fire, Agni (god of fire, mediator of sacrifice)','ಅಗ್ನಿ'],
+'vāyu':['noun','nom.sg.m.','vāyu','wind, Vāyu (god of wind, lord of breath)','ವಾಯು'],
+'sūrya':['noun','nom.sg.m.','sūrya','sun, Sūrya (the sun god)','ಸೂರ್ಯ'],
+'savitṛ':['noun','nom.sg.m.','savitṛ','Savitṛ, the impelling sun-god (√su = to impel)','ಸವಿತೃ'],
+'varuṇa':['noun','nom.sg.m.','varuṇa','Varuṇa, god of cosmic order, waters, oath','ವರುಣ'],
+'mitra':['noun','nom.sg.m.','mitra','Mitra, god of friendship, pact, sun','ಮಿತ್ರ'],
+'śiva':['noun','nom.sg.m.','śiva','Śiva, the auspicious one; auspicious, benign','ಶಿವ'],
+'viṣṇu':['noun','nom.sg.m.','viṣṇu','Viṣṇu, the pervader (√viś = to pervade)','ವಿಷ್ಣು'],
+'brahmā':['noun','nom.sg.m.','brahmān','Brahmā, the creator (masculine form)','ಬ್ರಹ್ಮಾ (ಸೃಷ್ಟಿಕರ್ತ)'],
+'kṛṣṇa':['noun','nom.sg.m.','kṛṣṇa','Kṛṣṇa (the dark-complexioned, the attractive one)','ಕೃಷ್ಣ'],
+'arjuna':['noun','nom.sg.m.','arjuna','Arjuna (bright, silver, the hero)','ಅರ್ಜುನ'],
+'nārāyaṇa':['noun','nom.sg.m.','nārāyaṇa','Nārāyaṇa, Viṣṇu (nāra = cosmic waters + ayana = resting place)','ನಾರಾಯಣ'],
+'īśvara':['noun','nom.sg.m.','īśvara','Lord, God, the supreme controller (√īś = to rule)','ಈಶ್ವರ'],
+'bhagavān':['noun','nom.sg.m.','bhagavat','the Blessed One, God, the Lord','ಭಗವಾನ್'],
+'asura':['noun','nom.sg.m.','asura','demon, anti-god','ಅಸುರ'],
+'prajāpati':['noun','nom.sg.m.','prajā+pati','lord of creatures, creator deity','ಪ್ರಜಾಪತಿ'],
+
+/* ── NATURE & COSMOS ── */
+'ākāśa':['noun','nom.sg.m.','ākāśa','space, ether, sky (ā+√kāś = to shine)','ಆಕಾಶ'],
+'bhūmi':['noun','nom.sg.f.','bhūmi','earth, ground, place (√bhū = to be)','ಭೂಮಿ'],
+'pṛthivī':['noun','nom.sg.f.','pṛthivī','earth (the broad one, √pṛth = to spread)','ಭೂಮಿ / ಪೃಥ್ವಿ'],
+'jala':['noun','nom.sg.n.','jala','water','ಜಲ / ನೀರು'],
+'ap':['noun','nom.pl.f.','ap','water (always plural in Vedic Sanskrit)','ನೀರು (ಆಪಃ)'],
+'loka':['noun','nom.sg.m.','loka','world, realm, people (√lok = to see)','ಲೋಕ'],
+'jagat':['noun','nom.sg.n.','jagat','the world, universe (that which moves, √gam = to go)','ಜಗತ್ (ಪ್ರಪಂಚ)'],
+'viśva':['noun/adj','nom.sg.n.','viśva','all, universal, the whole world','ವಿಶ್ವ'],
+'prapañca':['noun','nom.sg.m.','prapañca','phenomenal world, the manifold appearance','ಪ್ರಪಂಚ'],
+'nāmarūpa':['compound','nom.sg.n.','nāma+rūpa','name and form (the manifest phenomenal world)','ನಾಮರೂಪ'],
+'ākāśa':['noun','nom.sg.m.','ākāśa','space, sky, ether (the first element)','ಆಕಾಶ'],
+
+/* ── TIME ── */
+'kāla':['noun','nom.sg.m.','kāla','time, the right time; Kāla = Death personified','ಕಾಲ (ಸಮಯ)'],
+'bhūta':['noun/adj','nom.sg.n.','√bhū','past; being, creature (past participle of √bhū)','ಭೂತ (ಭೂತಕಾಲ / ಜೀವಿ)'],
+'bhavat':['adj','nom.sg.n.','√bhū','present, existing, becoming (present participle)','ವರ್ತಮಾನ'],
+'bhaviṣyat':['adj','nom.sg.n.','√bhū','future (future active participle)','ಭವಿಷ್ಯತ್ (ಭವಿಷ್ಯ)'],
+'trikāla':['compound','stem','tri+kāla','the three times (past, present, future)','ತ್ರಿಕಾಲ'],
+'trikālātīta':['compound adj','nom.sg.','tri+kāla+atīta','beyond all three times, time-transcendent','ತ್ರಿಕಾಲಾತೀತ'],
+'nityam':['adj','nom.sg.n.','nitya','eternal, permanent, constant; eternally (adv.)','ನಿತ್ಯ (ಶಾಶ್ವತ)'],
+
+/* ── QUALITIES ── */
+'sattva':['noun','nom.sg.n.','sattva','sattva — purity, light, truth, being (the first guṇa)','ಸತ್ತ್ವ (ಶುದ್ಧಿ / ಬೆಳಕು)'],
+'rajas':['noun','nom.sg.n.','rajas','rajas — passion, activity, dust (the second guṇa)','ರಜಸ್ (ಚಟುವಟಿಕೆ)'],
+'tamas':['noun','nom.sg.n.','tamas','tamas — inertia, darkness, ignorance (the third guṇa)','ತಮಸ್ (ಅಂಧಕಾರ / ಜಡತ್ವ)'],
+'guṇa':['noun','nom.sg.m.','guṇa','quality, attribute, strand (the three guṇas of Sāṃkhya)','ಗುಣ'],
+'śānta':['adj','nom.sg.','√śam','peaceful, tranquil, calmed (past participle √śam)','ಶಾಂತ'],
+'śāntam':['adj','nom.sg.n.','√śam','peaceful (nom.sg.n.)','ಶಾಂತ'],
+'śānti':['noun','nom.sg.f.','śānti','peace, tranquility, pacification','ಶಾಂತಿ'],
+'śivam':['adj','nom.sg.n.','śiva','auspicious, benign, pure (used of Brahman)','ಶಿವ (ಮಂಗಳ)'],
+'sukha':['noun/adj','nom.sg.n.','sukha','happiness, ease, pleasure (su+kha = good axle-hole!)','ಸುಖ'],
+'duḥkha':['noun/adj','nom.sg.n.','duḥkha','suffering, pain, unhappiness (duḥ+kha = bad axle-hole)','ದುಃಖ'],
+'nitya':['adj','nom.sg.','nitya','eternal, permanent, constant (ni+tya from √ni = to lead)','ನಿತ್ಯ (ಶಾಶ್ವತ)'],
+'anitya':['adj','nom.sg.','a+nitya','impermanent, transient, not eternal','ಅನಿತ್ಯ (ಅಶಾಶ್ವತ)'],
+'śuddha':['adj','nom.sg.','√śudh','pure, clean, unmixed','ಶುದ್ಧ'],
+'divya':['adj','nom.sg.','divya','divine, heavenly (from div = sky/heaven)','ದಿವ್ಯ'],
+'para':['adj','nom.sg.','para','supreme, highest, other, beyond','ಪರ (ಶ್ರೇಷ್ಠ)'],
+'parama':['adj','nom.sg.','parama','supreme, highest (superlative of para)','ಪರಮ'],
+'śreṣṭha':['adj','nom.sg.','śreṣṭha','best, most excellent','ಶ್ರೇಷ್ಠ'],
+'vareṇya':['adj','nom.sg.','vareṇya','most excellent, worthy of choice/worship','ವರೇಣ್ಯ (ಶ್ರೇಷ್ಠ)'],
+'ananta':['adj','nom.sg.','a+anta','endless, infinite, boundless','ಅನಂತ'],
+'mahā':['adj','prefix','mahat','great (used in compounds: mahā-)','ಮಹಾ'],
+'mahat':['adj','nom.sg.','mahat','great, large, the Great (cosmic intellect in Sāṃkhya)','ಮಹತ್'],
+'uttama':['adj','nom.sg.','uttama','highest, best, supreme (ut+tama)','ಉತ್ತಮ'],
+'śreyas':['noun','nom.sg.n.','śreyas','the good, the better, ultimate welfare','ಶ್ರೇಯಸ್ (ಒಳ್ಳೆಯದು)'],
+'preyas':['noun','nom.sg.n.','preyas','the pleasant, the agreeable (vs. śreyas)','ಪ್ರೇಯಸ್ (ಪ್ರಿಯವಾದದ್ದು)'],
+'abhaya':['noun/adj','nom.sg.n.','a+bhaya','fearlessness, freedom from fear (a+√bhī)','ಅಭಯ (ನಿರ್ಭಯ)'],
+
+/* ── COMMON VERBS (INFLECTED FORMS) ── */
+'asti':['verb','3rd.sg.pres.','√as','is, exists (√as = to be)','ಇದೆ'],
+'santi':['verb','3rd.pl.pres.','√as','are, exist','ಇವೆ / ಇದ್ದಾರೆ'],
+'asmi':['verb','1st.sg.pres.','√as','I am','ನಾನು ಇದ್ದೇನೆ'],
+'bhavati':['verb','3rd.sg.pres.','√bhū','becomes, is, happens','ಆಗುತ್ತದೆ'],
+'bhavanti':['verb','3rd.pl.pres.','√bhū','become, are','ಆಗುತ್ತಾರೆ'],
+'veda':['verb','3rd.sg.perf.','√vid','knows (perfect has present meaning)','ತಿಳಿದಿದೆ / ಅರಿತಿದೆ'],
+'vidyate':['verb','3rd.sg.pres.pass.','√vid','is found, exists, is known','ಕಂಡುಬರುತ್ತದೆ / ಇದೆ'],
+'jānāti':['verb','3rd.sg.pres.','√jñā','knows, understands','ತಿಳಿಯುತ್ತಾನೆ'],
+'paśyati':['verb','3rd.sg.pres.','√dṛś','sees, perceives, beholds','ನೋಡುತ್ತಾನೆ'],
+'śṛṇoti':['verb','3rd.sg.pres.','√śru','hears','ಕೇಳುತ್ತಾನೆ'],
+'gacchati':['verb','3rd.sg.pres.','√gam','goes, moves toward','ಹೋಗುತ್ತಾನೆ'],
+'āgacchati':['verb','3rd.sg.pres.','ā+√gam','comes, arrives','ಬರುತ್ತಾನೆ'],
+'vadati':['verb','3rd.sg.pres.','√vad','says, speaks, tells','ಹೇಳುತ್ತಾನೆ'],
+'uvāca':['verb','3rd.sg.perf.','√vac','said, spoke (perfect)','ಹೇಳಿದನು'],
+'āpnoti':['verb','3rd.sg.pres.','√āp','attains, reaches, obtains','ಪಡೆಯುತ್ತಾನೆ'],
+'manyate':['verb','3rd.sg.pres.ātm.','√man','thinks, considers, regards','ಭಾವಿಸುತ್ತಾನೆ'],
+'manyante':['verb','3rd.pl.pres.ātm.','√man','they consider, they regard (key in Māṇḍūkya 7)','ಭಾವಿಸುತ್ತಾರೆ'],
+'dhīmahi':['verb','1st.pl.opt.ātm.','√dhī/√dhyā','may we meditate, let us contemplate (Gāyatrī)','ಧ್ಯಾನ ಮಾಡೋಣ'],
+'pracodayāt':['verb','3rd.sg.opt.','pra+√cud','may he inspire, may he impel (Gāyatrī)','ಪ್ರೇರಿಸಲಿ'],
+'saṃviśati':['verb','3rd.sg.pres.','sam+√viś','enters, merges into, pervades','ಪ್ರವೇಶಿಸುತ್ತದೆ'],
+'kāmayate':['verb','3rd.sg.pres.ātm.','√kām','desires, longs for','ಆಶಿಸುತ್ತಾನೆ'],
+'upaśamyate':['verb','3rd.sg.pres.pass.','upa+√śam','becomes stilled, is pacified','ಶಾಂತವಾಗುತ್ತದೆ'],
+'śṛṇu':['verb','2nd.sg.imp.','√śru','listen! hear! (imperative)','ಕೇಳಿ!'],
+'paśya':['verb','2nd.sg.imp.','√dṛś','see! behold! (imperative)','ನೋಡಿ!'],
+'jāyate':['verb','3rd.sg.pres.ātm.','√jan','is born, arises','ಹುಟ್ಟುತ್ತದೆ'],
+'mriyate':['verb','3rd.sg.pres.ātm.','√mṛ','dies','ಸಾಯುತ್ತದೆ'],
+'tiṣṭhati':['verb','3rd.sg.pres.','√sthā','stands, remains, abides','ನಿಲ್ಲುತ್ತದೆ'],
+'karoti':['verb','3rd.sg.pres.','√kṛ','does, makes, performs','ಮಾಡುತ್ತಾನೆ'],
+'pratipadyate':['verb','3rd.sg.pres.ātm.','prati+√pad','attains, reaches, understands','ಪಡೆಯುತ್ತಾನೆ'],
+'prayujyate':['verb','3rd.sg.pres.pass.','pra+√yuj','is joined, applied, used','ಬಳಸಲಾಗುತ್ತದೆ'],
+'patati':['verb','3rd.sg.pres.','√pat','falls, flies, goes','ಬೀಳುತ್ತದೆ / ಹಾರುತ್ತದೆ'],
+'preṣitam':['adj/verb','p.p.','pra+√iṣ','sent forth, directed, impelled','ಕಳುಹಿಸಲ್ಪಟ್ಟ'],
+
+/* ── BHAGAVAD GĪTĀ SPECIFIC ── */
+'adhikāra':['noun','nom.sg.m.','adhikāra','right, entitlement, authority, competence (adhi+√kṛ)','ಅಧಿಕಾರ'],
+'phala':['noun','nom.sg.n.','phala','fruit, result, outcome, reward','ಫಲ'],
+'karmayoga':['compound','nom.sg.m.','karma+yoga','yoga of action, path of selfless work','ಕರ್ಮಯೋಗ'],
+'naiṣkarmya':['noun/adj','nom.sg.n.','naiṣkarmya','freedom from action, actionlessness','ನೈಷ್ಕರ್ಮ್ಯ'],
+'sthitaprajña':['compound','nom.sg.m.','sthita+prajña','one of steady wisdom (Gītā 2.55–72)','ಸ್ಥಿತಪ್ರಜ್ಞ'],
+'kṣetra':['noun','nom.sg.n.','kṣetra','field, domain; the body as field (Gītā ch.13)','ಕ್ಷೇತ್ರ (ದೇಹ)'],
+'kṣetrajña':['compound','nom.sg.m.','kṣetra+jña','knower of the field','ಕ್ಷೇತ್ರಜ್ಞ'],
+'vibhūti':['noun','nom.sg.f.','vibhūti','manifestation, divine power, glory (vi+√bhū)','ವಿಭೂತಿ'],
+'sannyāsa':['noun','nom.sg.m.','saṃnyāsa','renunciation (sam+ni+√as = to throw down)','ಸನ್ಯಾಸ'],
+'tyāga':['noun','nom.sg.m.','tyāga','abandonment, giving up (√tyaj = to abandon)','ತ್ಯಾಗ'],
+'svadharma':['compound','nom.sg.m.','sva+dharma','one\'s own duty (sva = own + dharma)','ಸ್ವಧರ್ಮ'],
+'niyata':['adj','nom.sg.','ni+√yam','appointed, regulated, fixed','ನಿಯತ (ನಿಯಮಿತ)'],
+'parādharma':['compound','nom.sg.m.','para+dharma','another\'s duty, foreign duty','ಪರಧರ್ಮ'],
+'karmāṇyevādhikāraste':['compound','','karma+eva+adhikāra+te','(your) right is in action alone — BG 2.47','ಕರ್ಮದಲ್ಲಿ ಮಾತ್ರ ನಿನಗೆ ಅಧಿಕಾರ'],
+'kurukṣetra':['compound','nom.sg.n.','kuru+kṣetra','the field of the Kurus (site of the Mahābhārata war)','ಕುರುಕ್ಷೇತ್ರ'],
+
+/* ── GĀYATRĪ MANTRA ── */
+'tatsavitur':['compound','gen.sg.m.','tat+savitṛ','of that Savitṛ (the impelling sun)','ಆ ಸವಿತೃವಿನ'],
+'vareṇyam':['adj','acc.sg.n.','vareṇya','most excellent, most worthy (acc. for dhīmahi)','ವರೇಣ್ಯ'],
+'bhargaḥ':['noun','nom.sg.m.','bhargas','brilliance, radiance, divine lustre','ಭರ್ಗ (ತೇಜಸ್ಸು)'],
+'bhargas':['noun','stem','bhargas','divine radiance, lustre','ಭರ್ಗಸ್'],
+'devasya':['noun','gen.sg.m.','deva','of the god, divine (genitive of deva)','ದೇವರ'],
+'dhiyaḥ':['noun','acc.pl.f.','dhī','our intellects/thoughts (acc. plural of dhī)','ಬುದ್ಧಿಗಳನ್ನು'],
+'naḥ':['pronoun','gen.pl.','asmad','our (enclitic, 1st person plural)','ನಮ್ಮ'],
+
+/* ── MĀṆḌŪKYA UPANIṢAD SPECIFIC ── */
+'upavyākhyāna':['noun','nom.sg.n.','upa+vi+ā+√khyā','further explanation, elaboration, what follows as commentary','ಉಪವ್ಯಾಖ್ಯಾನ'],
+'adṛṣṭam':['adj','nom.sg.n.','a+√dṛś','unseen, invisible, beyond perception','ಅದೃಶ್ಯ'],
+'avyavahāryam':['adj','nom.sg.n.','a+vyavahāra','beyond ordinary usage, unrelatable (avyavahārya)','ಅವ್ಯವಹಾರ್ಯ'],
+'agrāhyam':['adj','nom.sg.n.','a+√grah','ungraspable, cannot be seized by the senses','ಅಗ್ರಾಹ್ಯ'],
+'alakṣaṇam':['adj','nom.sg.n.','a+lakṣaṇa','without defining characteristics, featureless','ಅಲಕ್ಷಣ'],
+'acintyam':['adj','nom.sg.n.','a+√cint','inconceivable, unthinkable','ಅಚಿಂತ್ಯ'],
+'avyapadeśyam':['adj','nom.sg.n.','a+vyapadeśya','unnameable, cannot be pointed out (vy+apa+√diś)','ಅವ್ಯಪದೇಶ್ಯ'],
+'prapañcopaśama':['compound','nom.sg.','prapañca+upaśama','the cessation/stilling of phenomenal appearance','ಪ್ರಪಂಚ ಉಪಶಮ'],
+'ekātmapratyayasāra':['compound','nom.sg.','eka+ātma+pratyaya+sāra','whose essence is the certainty of the one Self','ಏಕಾತ್ಮ ಪ್ರತ್ಯಯ ಸಾರ'],
+'sarvajña':['compound adj','nom.sg.','sarva+jña','omniscient, all-knowing','ಸರ್ವಜ್ಞ'],
+'sarveśvara':['compound','nom.sg.m.','sarva+īśvara','lord of all','ಸರ್ವೇಶ್ವರ'],
+'antaryāmin':['compound','nom.sg.m.','antar+yāmin','inner controller, inner ruler (antar = within + √yam)','ಅಂತರ್ಯಾಮಿ'],
+'yoniḥ':['noun','nom.sg.f.','yoni','womb, source, origin, ground, cause','ಯೋನಿ (ಮೂಲ)'],
+'apītiḥ':['noun','nom.sg.f.','api+iti','going into, absorption, dissolution','ಅಪೀತಿ (ಲಯ)'],
+'prabhava':['noun','nom.sg.m.','pra+√bhū','origin, arising, coming-forth','ಪ್ರಭವ (ಉದ್ಭವ)'],
+'apyaya':['noun','nom.sg.m.','api+aya','dissolution, return, going-back-into','ಅಪ್ಯಯ (ಲಯ)'],
+'minaḥ':['verb','3rd.sg.pres.','√mi/√mā','measures, fathoms (Māṇḍūkya 11)','ಅಳೆಯುತ್ತಾನೆ'],
+'vijñeya':['adj','nom.sg.','vi+√jñā','to be known, that which should be realized','ವಿಜ್ಞೇಯ (ತಿಳಿಯಬೇಕಾದ)'],
+
+/* ── YOGA SŪTRAS SPECIFIC ── */
+'yogaḥ':['noun','nom.sg.m.','yoga','yoga (Yoga Sūtra: YS 1.2 = cittavṛttinirodhaḥ)','ಯೋಗ'],
+'cittavṛtti':['compound','nom.sg.f.','citta+vṛtti','fluctuations of the mind-stuff','ಚಿತ್ತ ವೃತ್ತಿ'],
+'cittavṛttinirodhaḥ':['compound','nom.sg.m.','citta+vṛtti+nirodha','the stilling of the fluctuations of mind','ಚಿತ್ತ ವೃತ್ತಿ ನಿರೋಧ'],
+'draṣṭṛ':['noun','nom.sg.m.','draṣṭṛ','the seer, the witness, the pure observer','ದ್ರಷ್ಟ (ಸಾಕ್ಷಿ)'],
+'dṛśya':['noun/adj','nom.sg.n.','√dṛś','the seen, the visible, what is perceived','ದೃಶ್ಯ'],
+'kleśa':['noun','nom.sg.m.','kleśa','affliction, cause of suffering (√kliś)','ಕ್ಲೇಶ'],
+'rāga':['noun','nom.sg.m.','rāga','attachment, passion (√rañj = to colour)','ರಾಗ (ಆಸಕ್ತಿ)'],
+'dveṣa':['noun','nom.sg.m.','dveṣa','aversion, hatred (√dviṣ = to hate)','ದ್ವೇಷ'],
+'abhiniveśa':['noun','nom.sg.m.','abhi+ni+√viś','clinging to life, fear of death','ಅಭಿನಿವೇಶ'],
+'asmitā':['noun','nom.sg.f.','asmitā','I-am-ness, false identification with ego','ಅಸ್ಮಿತಾ'],
+
+/* ── ĪŚA UPANIṢAD SPECIFIC ── */
+'īśāvāsyam':['compound adj','nom.sg.n.','īśa+vāsya','to be clothed/covered by the Lord (ā+√vas)','ಈಶಾವಾಸ್ಯ'],
+'kiñca':['pronoun/adj','nom.sg.n.','kim+ca','whatever, whatsoever','ಯಾವುದೇ'],
+'jagat':['noun','nom.sg.n.','jagat','the moving world, universe (√gam)','ಜಗತ್ (ಪ್ರಪಂಚ)'],
+'jagatyām':['noun','loc.sg.f.','jagatī','in the world, on earth (Vedic: jagatī = earth)','ಜಗತ್ತಿನಲ್ಲಿ'],
+'tena':['pronoun','inst.sg.n.','tad','by that, through that, with that','ಅದರಿಂದ / ಅದರ ಮೂಲಕ'],
+'tyaktena':['adj+inst.','inst.sg.n.','tyakta+tena','having renounced (by renunciation)','ತ್ಯಾಗದ ಮೂಲಕ'],
+'bhuñjīthāḥ':['verb','2nd.sg.opt.ātm.','√bhuj','enjoy, experience (optative, gentle command)','ಅನುಭವಿಸು'],
+'mā':['particle','indecl.','mā','do not (prohibitive particle)','ಬೇಡ'],
+'gṛdhaḥ':['verb','2nd.sg.aor.pass.','√gṛdh','covet not! be not greedy! (Aor. inj.)','ಆಸೆ ಪಡಬೇಡ'],
+'kasya':['pronoun','gen.sg.n.','kim','of whom? whose?','ಯಾರದ್ದು?'],
+'svid':['particle','indecl.','svid','(enclitic particle of interrogation)','(ಪ್ರಶ್ನೆಯ ಕಣ)'],
+'dhanam':['noun','nom.sg.n.','dhana','wealth, riches','ಧನ (ಸಂಪತ್ತು)'],
+
+/* ── KENA UPANIṢAD ── */
+'kena':['pronoun','inst.sg.n.','kim','by what? by whom? (instrumental of kim)','ಯಾರಿಂದ? / ಯಾವುದರಿಂದ?'],
+'iṣitam':['adj/p.p.','nom.sg.n.','√iṣ','directed, willed, impelled','ಪ್ರೇರಿತ'],
+'patati':['verb','3rd.sg.pres.','√pat','falls, moves forward, flies','ಬೀಳುತ್ತದೆ / ಹಾರುತ್ತದೆ'],
+'preṣitam':['adj/p.p.','nom.sg.n.','pra+√iṣ','sent forth, directed','ಕಳುಹಿಸಲ್ಪಟ್ಟ'],
+
+/* ── NUMERALS ── */
+'eka':['numeral','nom.sg.','eka','one','ಒಂದು'],
+'dvi':['numeral','stem','dvi','two','ಎರಡು'],
+'dvitīya':['numeral/adj','nom.sg.','dvitīya','second','ಎರಡನೆಯ'],
+'tri':['numeral','stem','tri','three','ಮೂರು'],
+'tṛtīya':['numeral/adj','nom.sg.','tṛtīya','third','ಮೂರನೆಯ'],
+'catur':['numeral','stem','catur','four','ನಾಲ್ಕು'],
+'caturtha':['numeral/adj','nom.sg.','caturtha','fourth','ನಾಲ್ಕನೆಯ'],
+'pañca':['numeral','stem','pañca','five','ಐದು'],
+'ṣaṭ':['numeral','nom.','ṣaṭ','six','ಆರು'],
+'sapta':['numeral','nom.','sapta','seven','ಏಳು'],
+'aṣṭa':['numeral','stem','aṣṭa','eight','ಎಂಟು'],
+'nava':['numeral','stem','nava','nine; new','ಒಂಬತ್ತು; ಹೊಸ'],
+'daśa':['numeral','stem','daśa','ten','ಹತ್ತು'],
+'śata':['numeral','nom.sg.n.','śata','hundred','ನೂರು'],
+'sahasra':['numeral','nom.sg.n.','sahasra','thousand','ಸಾವಿರ'],
+'pratham':['adj','nom.sg.m.','prathama','first, primary','ಮೊದಲ'],
+'prathama':['adj','stem','prathama','first, foremost','ಪ್ರಥಮ (ಮೊದಲ)'],
+
+/* ── GRAMMAR TERMS ── */
+'sandhi':['noun','nom.sg.m.','sandhi','euphonic junction, phonetic fusion (sam+√dhā)','ಸಂಧಿ'],
+'vibhakti':['noun','nom.sg.f.','vibhakti','case ending (vi+√bhaj = to divide)','ವಿಭಕ್ತಿ'],
+'dhātu':['noun','nom.sg.m.','dhātu','verbal root (√dhā = to place)','ಧಾತು (ಕ್ರಿಯಾಮೂಲ)'],
+'pratyaya':['noun','nom.sg.m.','pratyaya','suffix, ending; cognition','ಪ್ರತ್ಯಯ'],
+'kāraka':['noun','nom.sg.n.','kāraka','the six grammatical relations (√kṛ = to do)','ಕಾರಕ'],
+'pada':['noun','nom.sg.n.','pada','word, foot (pada-pāṭha = word-by-word reading)','ಪದ'],
+'vākya':['noun','nom.sg.n.','vākya','sentence, speech (√vac = to speak)','ವಾಕ್ಯ'],
+'nāman':['noun','stem','nāman','name, noun','ನಾಮ'],
+'ākhyāta':['noun','nom.sg.n.','ākhyāta','finite verb form (ā+√khyā = to declare)','ಆಖ್ಯಾತ (ಕ್ರಿಯಾಪದ)'],
+
+/* ── COMMON ADJECTIVES ── */
+'mahānt':['adj','nom.sg.m.','mahat','great (nom.sg.m. of mahat)','ಮಹಾನ್'],
+'kṣudra':['adj','nom.sg.','kṣudra','small, trivial, low','ಕ್ಷುದ್ರ (ಚಿಕ್ಕದು)'],
+'sthūla':['adj','nom.sg.','sthūla','gross, coarse, physical, large','ಸ್ಥೂಲ (ಸ್ಥೂಲ)'],
+'sūkṣma':['adj','nom.sg.','sūkṣma','subtle, fine, delicate','ಸೂಕ್ಷ್ಮ'],
+'kāraṇa':['noun','nom.sg.n.','kāraṇa','cause, reason (√kṛ = to do)','ಕಾರಣ'],
+'kārya':['noun','nom.sg.n.','kārya','effect, result; to be done','ಕಾರ್ಯ (ಫಲ)'],
+'sāra':['noun/adj','nom.sg.m.','sāra','essence, core (√sṛ = to flow)','ಸಾರ (ಮೂಲಭೂತ)'],
+'ghana':['adj/noun','nom.sg.m.','ghana','dense, solid, a mass (√han = to strike/condense)','ಘನ (ದಟ್ಟ)'],
+'yoga':['noun','nom.sg.m.','yoga','union, method, yoga','ಯೋಗ'],
+'yukta':['adj','nom.sg.','√yuj','yoked, disciplined, absorbed (in yoga)','ಯುಕ್ತ'],
+'stira':['adj','nom.sg.','sthira','firm, stable, steady','ಸ್ಥಿರ'],
+'śubha':['adj','nom.sg.','śubha','auspicious, good, beautiful','ಶುಭ'],
+'bhadra':['adj','nom.sg.','bhadra','good, blessed, auspicious, fortunate','ಭದ್ರ (ಮಂಗಳ)'],
+'bhadram':['adj','nom.sg.n.','bhadra','the auspicious, the good (Śānti mantra)','ಭದ್ರ'],
+'dakṣiṇa':['adj','nom.sg.','dakṣiṇa','right (hand), southern; skillful; gift to priest','ದಕ್ಷಿಣ'],
+'uttara':['adj','nom.sg.','uttara','upper, northern, following, answer','ಉತ್ತರ'],
+};
+
+/* ═══════════════════════════════════════════════════════════
+   SUFFIX STRIPPING TABLE
+   Each entry: [suffix_to_remove, stem_ending_to_add, grammar_label, confidence]
+   Sorted by suffix length (longest first) — try in order.
+═══════════════════════════════════════════════════════════ */
+const SUFFIXES = [
+// ── a-stem masculine/neuter ──
+['eṣv','a','loc.pl.m/n.',0.9],
+['ānāṃ','a','gen.pl.',0.9],['ānām','a','gen.pl.',0.9],
+['ebhyaḥ','a','dat/abl.pl.m/n.',0.85],
+['aiḥ','a','inst.pl.m/n.',0.9],
+['āni','a','nom/acc.pl.n.',0.9],
+['āḥ','a','nom.pl.m.',0.8],
+['asya','a','gen.sg.m/n.',0.95],
+['āya','a','dat.sg.m/n.',0.9],
+['eṇa','a','inst.sg.m/n.',0.9],
+['ena','a','inst.sg.m/n.',0.85],
+['āt','a','abl.sg.m/n.',0.85],
+['eṣu','a','loc.pl.m/n.',0.9],
+['aḥ','a','nom.sg.m.',0.85],
+['am','a','nom/acc.sg.n.',0.8],
+['ān','a','acc.pl.m.',0.85],
+// ── ā-stem feminine ──
+['āyāḥ','ā','gen/abl.sg.f.',0.9],
+['āyām','ā','loc.sg.f.',0.9],
+['āyai','ā','dat.sg.f.',0.9],
+['ayā','ā','inst.sg.f.',0.85],
+['āsu','ā','loc.pl.f.',0.9],
+['ābhiḥ','ā','inst.pl.f.',0.9],
+['ābhyaḥ','ā','dat/abl.pl.f.',0.9],
+// ── i-stem ──
+['ibhyaḥ','i','dat/abl.pl.',0.9],
+['iṣu','i','loc.pl.',0.9],
+['ibhiḥ','i','inst.pl.',0.9],
+['inā','i','inst.sg.',0.85],
+['aye','i','dat.sg.',0.85],
+['eḥ','i','gen/abl.sg.',0.8],
+['iḥ','i','nom.sg.m/f.',0.85],
+['im','i','acc.sg.',0.8],
+// ── u-stem ──
+['ubhyaḥ','u','dat/abl.pl.',0.9],
+['uṣu','u','loc.pl.',0.9],
+['ubhiḥ','u','inst.pl.',0.9],
+['unā','u','inst.sg.',0.85],
+['ave','u','dat.sg.',0.85],
+['oḥ','u','gen/abl.sg.',0.8],
+['uḥ','u','nom.sg.m/f.',0.85],
+['um','u','acc.sg.',0.8],
+// ── an-stem (ātman, brahman, rājan) ──
+['manoḥ','man','gen/abl.sg.m.',0.9],
+['manaḥ','man','nom.sg.n./gen.sg.m.',0.85],
+['mane','man','dat/loc.sg.m.',0.85],
+['manā','man','inst.sg.m.',0.85],
+['mānam','man','acc.sg.m.',0.9],
+['mānaṃ','man','acc.sg.m.',0.9],
+['mānaḥ','man','nom.pl.m.',0.85],
+// ── as-stem (manas, tapas, tejas) ──
+['asaḥ','as','gen.sg.n.',0.85],
+['asā','as','inst.sg.n.',0.85],
+['asī','as','loc.sg.n.',0.8],
+['obhyaḥ','as','dat/abl.pl.',0.85],
+['obhiḥ','as','inst.pl.',0.85],
+// ── is-stem (tejas→tejas) ──
+['iṣaḥ','is','gen.sg.',0.85],
+// ── us-stem (tapas-like) ──
+['uṣaḥ','us','gen.sg.',0.8],
+// ── Verbal personal endings (present, act.) ──
+['anti','','3.pl.pres.act.',0.8],
+['ante','','3.pl.pres.mid.',0.8],
+['ataḥ','','3.du.pres.act.',0.75],
+['āmi','','1.sg.pres.act.',0.9],
+['āvaḥ','','1.du.pres.act.',0.85],
+['āmaḥ','','1.pl.pres.act.',0.85],
+['āmahe','','1.pl.pres.mid.',0.85],
+['āvahe','','1.du.pres.mid.',0.85],
+['ate','','3.sg.pres.mid.',0.8],
+['ase','','2.sg.pres.mid.',0.8],
+['atha','','2.pl.pres.act.',0.75],
+['ati','','3.sg.pres.act.',0.8],
+['asi','','2.sg.pres.act.',0.8],
+// ── Past participle endings ──
+['ita','','p.p. (past participle)',0.8],
+['ita','','p.p.',0.8],
+['ta','','p.p.',0.75],
+['na','','p.p.',0.7],
+// ── Abstract noun suffixes ──
+['tvam','','abstract noun (-ness/-ity)',0.85],
+['tā','','abstract noun (-ness)',0.8],
+['tāyāḥ','tā','gen.sg.f. abstract',0.85],
+];
+
+/* ═══════════════════════════════════════════════════════════
+   DEVANAGARI → IAST TRANSLITERATOR
+   Full implementation of Unicode Devanagari to IAST
+═══════════════════════════════════════════════════════════ */
+function devToIAST(text) {
+  const C={'क':'k','ख':'kh','ग':'g','घ':'gh','ङ':'ṅ','च':'c','छ':'ch','ज':'j','झ':'jh','ञ':'ñ','ट':'ṭ','ठ':'ṭh','ड':'ḍ','ढ':'ḍh','ण':'ṇ','त':'t','थ':'th','द':'d','ध':'dh','न':'n','प':'p','फ':'ph','ब':'b','भ':'bh','म':'m','य':'y','र':'r','ल':'l','व':'v','श':'ś','ष':'ṣ','स':'s','ह':'h','ळ':'ḷ','क़':'q','ड़':'ṛa','ढ़':'ṛha','फ़':'f','ज़':'z'};
+  const IV={'अ':'a','आ':'ā','इ':'i','ई':'ī','उ':'u','ऊ':'ū','ऋ':'ṛ','ॠ':'ṝ','ऌ':'ḷ','ए':'e','ऐ':'ai','ओ':'o','औ':'au'};
+  const VM={'ा':'ā','ि':'i','ी':'ī','ु':'u','ू':'ū','ृ':'ṛ','ॄ':'ṝ','े':'e','ै':'ai','ो':'o','ौ':'au'};
+  const VIR='्', ANS='ं', VIS='ः', CDU='ँ';
+  const chars=[...text]; let out='',i=0;
+  while(i<chars.length){
+    const c=chars[i];
+    if(c==='ॐ'){out+='oṃ';i++;continue;}
+    if(IV[c]){out+=IV[c];i++;if(chars[i]===ANS){out+='ṃ';i++;}else if(chars[i]===VIS){out+='ḥ';i++;}continue;}
+    if(c===ANS){out+='ṃ';i++;continue;}
+    if(c===VIS){out+='ḥ';i++;continue;}
+    if(c===CDU){out+='m̐';i++;continue;}
+    if(c==='।'){out+=' | ';i++;continue;}
+    if(c==='॥'){out+=' || ';i++;continue;}
+    if(c===' '||c==='\n'||c==='\t'){out+=c;i++;continue;}
+    if(C[c]){
+      out+=C[c];i++;
+      if(i<chars.length){
+        if(chars[i]===VIR){i++;} // virāma: no inherent a; next char may start new consonant
+        else if(VM[chars[i]]){out+=VM[chars[i]];i++;if(chars[i]===ANS){out+='ṃ';i++;}else if(chars[i]===VIS){out+='ḥ';i++;}}
+        else{out+='a';if(chars[i]===ANS){out+='ṃ';i++;}else if(chars[i]===VIS){out+='ḥ';i++;}}
+      }else{out+='a';}
+      continue;
+    }
+    // Devanagari digits
+    const dn='०१२३४५६७८९';const di=dn.indexOf(c);if(di>=0){out+=di;i++;continue;}
+    out+=c;i++;
+  }
+  return out.trim();
+}
+
+/* ═══════════════════════════════════════════════════════════
+   NORMALISE IAST for lookup
+   Handles common variations: ṃ/m̃, final -aṃ/-am, etc.
+═══════════════════════════════════════════════════════════ */
+function norm(s){
+  return s.toLowerCase()
+    .replace(/ṃ/g,'ṃ').replace(/m̐/g,'ṃ')
+    .replace(/ṁ/g,'ṃ').replace(/\|+/g,'').replace(/\s+/g,' ')
+    .replace(/[।॥\.]+/g,'').trim();
+}
+
+/* ═══════════════════════════════════════════════════════════
+   TOKENISER
+   Split Devanagari input into tokens on whitespace + dandas.
+   Handle anusvāra continuation carefully.
+═══════════════════════════════════════════════════════════ */
+function tokenise(text){
+  return text.replace(/[।॥]/g,' ').replace(/\s+/g,' ')
+    .trim().split(' ').map(t=>t.replace(/^[०-९\d]+$/,'')).filter(Boolean);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   WORD ANALYSER
+   1. Direct lookup (exact IAST)
+   2. Suffix-stripped lookup
+   3. Compound word detection heuristic
+   Returns analysis object
+═══════════════════════════════════════════════════════════ */
+function analyseWord(devanagari){
+  const iast = norm(devToIAST(devanagari));
+  const result = {devanagari, iast, found:false, pos:'', grammar:'', root:'', en:'', kn:'', strip:'', notes:''};
+
+  // 1. Direct lookup
+  if(DICT[iast]){
+    const d=DICT[iast];
+    Object.assign(result,{found:true,pos:d[0],grammar:d[1],root:d[2],en:d[3],kn:d[4]});
+    return result;
+  }
+
+  // 2. Try normalisation variants
+  const variants=[
+    iast.replace(/ṃ$/,'m'), iast.replace(/m$/,'ṃ'),
+    iast.replace(/ḥ$/,''), iast+'a', iast.replace(/a$/,''),
+    iast.replace(/aṃ$/,'a'), iast.replace(/aṃ$/,'am'),
+    iast.replace(/am$/,'a'), iast.replace(/aḥ$/,'a'),
+  ];
+  for(const v of variants){
+    if(v && DICT[v]){
+      const d=DICT[v];
+      Object.assign(result,{found:true,pos:d[0],grammar:d[1],root:d[2],en:d[3],kn:d[4],notes:'(variant lookup: '+v+')'});
+      return result;
+    }
+  }
+
+  // 3. Suffix stripping
+  for(const [sfx,repl,gloss] of SUFFIXES){
+    if(iast.endsWith(sfx) && iast.length > sfx.length+1){
+      const stem = iast.slice(0,-sfx.length) + repl;
+      if(DICT[stem]){
+        const d=DICT[stem];
+        Object.assign(result,{found:true,pos:d[0],grammar:gloss+' [stem: '+stem+']',root:d[2],en:d[3],kn:d[4],strip:stem});
+        return result;
+      }
+      // also try stem without trailing repl
+      const stem2=iast.slice(0,-sfx.length);
+      if(DICT[stem2]){
+        const d=DICT[stem2];
+        Object.assign(result,{found:true,pos:d[0],grammar:gloss+' [stem: '+stem2+']',root:d[2],en:d[3],kn:d[4],strip:stem2});
+        return result;
+      }
+    }
+  }
+
+  // 4. Try splitting at common sandhi junctions for compounds
+  // Common joins: ā+a, e+a, o+a, ā+ā, ai+a, au+a
+  const sandhiSplits = trySandhiSplit(iast);
+  for(const [w1,w2,note] of sandhiSplits){
+    if(DICT[w1]&&DICT[w2]){
+      const d1=DICT[w1],d2=DICT[w2];
+      Object.assign(result,{
+        found:true,pos:'compound',grammar:'compound ['+w1+' + '+w2+']',
+        root:w1+'+'+w2,
+        en:d1[3]+' + '+d2[3],
+        kn:d1[4]+' + '+d2[4],
+        notes:'Sandhi split: '+w1+' + '+w2+' ('+note+')'
+      });
+      return result;
+    }
+    // try just w1
+    if(DICT[w1]){
+      result.notes='Possible compound; first part: '+w1+' = '+DICT[w1][3];
+    }
+  }
+
+  // 5. Not found — return IAST with note
+  result.notes='Word not found in built-in dictionary. IAST: '+iast;
+  result.en='[unknown: '+iast+']';
+  result.kn='['+iast+']';
+  return result;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   BASIC SANDHI REVERSAL
+   Try common vowel sandhi splits
+═══════════════════════════════════════════════════════════ */
+function trySandhiSplit(iast){
+  const results=[];
+  // ā junction: could be a+a, a+ā, ā+a, ā+ā
+  for(let i=2;i<iast.length-1;i++){
+    if(iast[i]==='ā'){
+      results.push([iast.slice(0,i)+'a', 'a'+iast.slice(i+1),'a+a→ā'],[iast.slice(0,i)+'a', 'ā'+iast.slice(i+1),'a+ā→ā'],[iast.slice(0,i)+'ā', 'a'+iast.slice(i+1),'ā+a→ā']);
+    }
+    // e junction: a+i, a+ī, ā+i
+    if(iast[i]==='e'&&iast[i-1]!=='v'){
+      results.push([iast.slice(0,i)+'a','i'+iast.slice(i+1),'a+i→e'],[iast.slice(0,i)+'a','ī'+iast.slice(i+1),'a+ī→e'],[iast.slice(0,i)+'ā','i'+iast.slice(i+1),'ā+i→e']);
+    }
+    // o junction: a+u, a+ū, ā+u
+    if(iast[i]==='o'&&(iast[i+1]!=='m'&&iast[i+1]!=='ṃ')){
+      results.push([iast.slice(0,i)+'a','u'+iast.slice(i+1),'a+u→o'],[iast.slice(0,i)+'a','ū'+iast.slice(i+1),'a+ū→o'],[iast.slice(0,i)+'aḥ',''+iast.slice(i+1),'aḥ+voiced→o'],[iast.slice(0,i)+'as',''+iast.slice(i+1),'as+voiced→o']);
+    }
+    // aṃ / am at boundary
+    if(iast.slice(i,i+2)==='aṃ'){
+      results.push([iast.slice(0,i+1),''+iast.slice(i+2),'aṃ→am (anusvāra)']);
+    }
+  }
+  return results.slice(0,12); // cap candidates
+}
+
+/* ═══════════════════════════════════════════════════════════
+   IDENTIFY SOURCE TEXT
+═══════════════════════════════════════════════════════════ */
+function identifySource(tokens){
+  const flat=tokens.join('');
+  if(flat.includes('ब्रह्म')&&flat.includes('आत्मा')&&flat.includes('सर्व')) return 'Māṇḍūkya Upaniṣad (verse 2)';
+  if(flat.includes('योगानुशासनम्')||flat.includes('योगानुशासन')) return 'Yoga Sūtra 1.1 (Patañjali)';
+  if(flat.includes('कर्मण्येव')||flat.includes('फलेषु')) return 'Bhagavad Gītā 2.47';
+  if(flat.includes('सवितुर्')||flat.includes('धीमहि')||flat.includes('भर्गो')) return 'Gāyatrī Mantra — Ṛgveda 3.62.10';
+  if(flat.includes('शान्त')&&flat.includes('शिव')&&flat.includes('चतुर्थ')) return 'Māṇḍūkya Upaniṣad (verse 7)';
+  if(flat.includes('ईशावास्य')||flat.includes('जगत्यां')) return 'Īśa Upaniṣad (verse 1)';
+  if(flat.includes('केनेषित')||flat.includes('प्रेषित')&&flat.includes('मनः')) return 'Kena Upaniṣad (verse 1)';
+  if(flat.includes('ब्रह्मायम्')||flat.includes('अयमात्मा')) return 'Māṇḍūkya Upaniṣad';
+  if(flat.includes('अक्षरम्')||flat.includes('ओमित्येतद')) return 'Māṇḍūkya Upaniṣad (verse 1)';
+  return '';
+}
+
+/* ═══════════════════════════════════════════════════════════
+   BUILD TRANSLATION FROM ANALYSES
+═══════════════════════════════════════════════════════════ */
+function buildTranslation(analyses){
+  const found=analyses.filter(a=>a.found&&!a.en.startsWith('[unknown'));
+  const enWords=analyses.map(a=>a.found&&!a.en.startsWith('[unknown')?a.en:'('+a.iast+')');
+  const knWords=analyses.map(a=>a.found&&!a.kn.startsWith('[')?a.kn:'('+a.iast+')');
+  const en=enWords.join(' — ');
+  const kn=knWords.join(' — ');
+  const foundCount=found.length, total=analyses.length;
+  const pct=Math.round(foundCount/total*100);
+
+  let comm='';
+  const src=identifySource(analyses.map(a=>a.devanagari));
+  if(src) comm+=`<h4>SOURCE TEXT</h4><p>${src}</p>`;
+  comm+=`<h4>GRAMMATICAL NOTES</h4><p>`;
+  const nouns=analyses.filter(a=>a.pos==='noun'||a.pos==='adj'||a.pos==='pronoun/adj');
+  const verbs=analyses.filter(a=>a.pos==='verb');
+  const parts=analyses.filter(a=>a.pos==='particle');
+  const compounds=analyses.filter(a=>a.pos==='compound');
+  if(nouns.length) comm+=`Nominal forms: ${nouns.map(a=>'<em>'+a.devanagari+'</em> ('+a.grammar+')').join(', ')}. `;
+  if(verbs.length) comm+=`Verbal forms: ${verbs.map(a=>'<em>'+a.devanagari+'</em> ('+a.grammar+')').join(', ')}. `;
+  if(parts.length) comm+=`Particles/Indeclinables: ${parts.map(a=>'<em>'+a.devanagari+'</em>').join(', ')}. `;
+  if(compounds.length) comm+=`Compounds: ${compounds.map(a=>'<em>'+a.devanagari+'</em> ['+a.notes+']').join(', ')}. `;
+  comm+=`</p>`;
+  comm+=`<h4>COVERAGE</h4><p>${foundCount} of ${total} words (${pct}%) found in the built-in dictionary. `;
+  if(pct<80) comm+=`Words not found are shown in brackets — consider these as untranslated IAST. `;
+  comm+=`Add more words by editing the <code>DICT</code> object in the source code.</p>`;
+  comm+=`<h4>DICTIONARY SOURCES</h4><p>Monier-Williams (1899), <em>A Sanskrit-English Dictionary</em>. Oxford. Apte (1890), <em>Practical Sanskrit-English Dictionary</em>. Pune. Both public domain. Kannada glosses from traditional commentaries (Sāyaṇa, Ānandagiri, Śaṅkara's Bhāṣya).</p>`;
+  return {en,kn,comm};
+}
+
+/* ═══════════════════════════════════════════════════════════
+   UI STATE
+═══════════════════════════════════════════════════════════ */
+let uiLang='en';
+const SAMPLES=[
+  'सर्वं हि एतद्ब्रह्म अयमात्मा ब्रह्म सोऽयमात्मा चतुष्पात्',
+  'कर्मण्येवाधिकारस्ते मा फलेषु कदाचन',
+  'अथ योगानुशासनम्',
+  'शान्तं शिवमद्वैतं चतुर्थं मन्यन्ते स आत्मा स विज्ञेयः',
+  'तत्सवितुर्वरेण्यं भर्गो देवस्य धीमहि',
+  'ईशावास्यमिदं सर्वं यत्किञ्च जगत्यां जगत्',
+  'केनेषितं पतति प्रेषितं मनः',
+];
+
+function load(i){document.getElementById('inp').value=SAMPLES[i];cc();}
+function cc(){const v=document.getElementById('inp').value;document.getElementById('ccspan').textContent=v.length?v.length+' chars':'';}
+function setL(l){uiLang=l;['en','kn','b'].forEach(x=>{const m={'en':'lenBtn','kn':'lknBtn','b':'lbBtn'};const b=document.getElementById(m[x]);if(b)b.classList.remove('on');});const m2={'en':'lenBtn','kn':'lknBtn','both':'lbBtn'};document.getElementById(m2[l]||'lenBtn').classList.add('on');}
+function clearAll(){document.getElementById('inp').value='';cc();document.getElementById('res').classList.remove('show');document.getElementById('emp').style.display='block';document.getElementById('err').classList.remove('show');}
+function ttab(btn,id){document.querySelectorAll('.ttab').forEach(b=>b.classList.remove('on'));document.querySelectorAll('.tpane').forEach(p=>p.classList.remove('on'));btn.classList.add('on');document.getElementById(id).classList.add('on');}
+function tog(i){document.getElementById('wc'+i).classList.toggle('open');}
+function jumpCard(i){const el=document.getElementById('wc'+i);if(el){el.scrollIntoView({behavior:'smooth',block:'center'});el.classList.add('open');}}
+
+/* ═══════════════════════════════════════════════════════════
+   RENDER
+═══════════════════════════════════════════════════════════ */
+function posClass(p){
+  if(!p)return'noun';const s=p.toLowerCase();
+  if(s.includes('verb'))return'verb';
+  if(s.includes('adj'))return'adj';
+  if(s.includes('particle')||s.includes('indecl'))return'particle';
+  if(s.includes('pronoun'))return'pronoun';
+  if(s.includes('compound'))return'compound';
+  return'noun';
+}
+
+function renderTokens(tokens){
+  document.getElementById('tokF').innerHTML=tokens.map((w,i)=>`<span class="tokword" onclick="jumpCard(${i})" title="Token ${i+1}">${w}</span>${i<tokens.length-1?'<span class="tokplus">+</span>':''}`).join('');
+  document.getElementById('tokNote').textContent=`${tokens.length} token${tokens.length!==1?'s':''} identified. Click any token to jump to its analysis card.`;
+}
+
+function renderCards(analyses){
+  document.getElementById('wgrid').innerHTML=analyses.map((a,i)=>`
+<div class="wcard${a.found?'':' notfound'}" id="wc${i}" onclick="tog(${i})">
+  <span class="widx">${String(i+1).padStart(2,'0')}</span>
+  <div class="wdev">${a.devanagari}</div>
+  <div class="wrom">${a.iast}</div>
+  <div class="wtags">
+    ${a.pos?`<span class="tag ${posClass(a.pos)}">${a.pos.toUpperCase()}</span>`:''}
+    ${a.grammar?`<span class="tag gram">${a.grammar.split('[')[0].trim()}</span>`:''}
+    ${!a.found?`<span class="tag verb" style="background:var(--rose-l);color:var(--rose)">NOT FOUND</span>`:''}
+  </div>
+  <div class="wmean">${a.found&&!a.en.startsWith('[unknown')?a.en:'<span class="wnotfound">Not in dictionary — IAST: '+a.iast+'</span>'}</div>
+  <div class="whint">${a.found?'↓ root · grammar · ಕನ್ನಡ':'↓ see IAST form'}</div>
+  <div class="wdetail">
+    ${a.root?`<div class="wroot"><strong>Root / Stem:</strong> ${a.root}</div>`:''}
+    ${a.grammar?`<div class="wroot"><strong>Grammar:</strong> ${a.grammar}</div>`:''}
+    ${a.strip?`<div class="wroot"><strong>Stripped stem:</strong> ${a.strip}</div>`:''}
+    ${a.found&&a.kn&&!a.kn.startsWith('[')?`<div class="wkn-box"><span class="wkn-lbl">KANNADA ಕನ್ನಡ</span>${a.kn}</div>`:''}
+    ${a.notes?`<div class="wnotes">${a.notes}</div>`:''}
+    <div class="wnotes" style="margin-top:.5rem">
+      <a href="https://www.sanskrit-lexicon.uni-koeln.de/scans/MWScan/2020/web/webtc/indexcaller.php?key=${encodeURIComponent(a.root||a.iast)}" target="_blank" style="color:var(--saffron);text-decoration:none;font-family:'Cinzel',sans-serif;font-size:.58rem;letter-spacing:.07em;border-bottom:1px solid rgba(200,97,26,.3)">VIEW IN MONIER-WILLIAMS →</a>
+    </div>
+  </div>
+</div>`).join('');
+}
+
+function renderTranslation(t){
+  document.getElementById('ten').innerHTML=`<div class="ten">${t.en}</div>`;
+  document.getElementById('tkn').innerHTML=`<div class="tkn">${t.kn}</div>`;
+  document.getElementById('tcomm').innerHTML=`<div class="tcomm">${t.comm}</div>`;
+}
+
+function renderTable(analyses){
+  document.getElementById('wtbody').innerHTML=analyses.map((a,i)=>`
+<tr>
+  <td style="color:var(--ink-muted);font-family:'Cinzel',sans-serif;font-size:.68rem">${i+1}</td>
+  <td><div class="td-dev">${a.devanagari}</div></td>
+  <td><div class="td-rom">${a.iast}</div></td>
+  <td><div class="td-gram">${a.grammar?a.grammar.split('[')[0].trim():''}<br><span style="color:var(--saffron);font-size:.7rem">${a.pos||''}</span></div></td>
+  <td><div class="td-en">${a.found&&!a.en.startsWith('[unknown')?a.en:'<em style="color:var(--rose)">'+a.iast+'</em>'}</div></td>
+  <td><div class="td-kn">${a.found&&a.kn&&!a.kn.startsWith('[')?a.kn:''}</div></td>
+</tr>`).join('');
+}
+
+/* ═══════════════════════════════════════════════════════════
+   MAIN RUN FUNCTION
+═══════════════════════════════════════════════════════════ */
+function run(){
+  const text=document.getElementById('inp').value.trim();
+  if(!text){document.getElementById('err').textContent='Please enter some Sanskrit text.';document.getElementById('err').classList.add('show');return;}
+  document.getElementById('err').classList.remove('show');
+  document.getElementById('res').classList.remove('show');
+  document.getElementById('emp').style.display='none';
+  document.getElementById('prog').classList.add('show');
+  document.getElementById('progmsg').textContent='Transliterating to IAST…';
+  document.getElementById('dbtn').disabled=true;
+  document.getElementById('origT').textContent=text;
+
+  // Use setTimeout so the browser paints the progress bar before JS runs
+  setTimeout(()=>{
+    try{
+      document.getElementById('progmsg').textContent='Tokenising…';
+      const tokens=tokenise(text);
+      document.getElementById('progmsg').textContent='Analysing '+tokens.length+' word'+(tokens.length!==1?'s':'')+'…';
+
+      const analyses=tokens.map(t=>analyseWord(t));
+      const trans=buildTranslation(analyses);
+
+      renderTokens(tokens);
+      renderCards(analyses);
+      renderTranslation(trans);
+      renderTable(analyses);
+
+      document.getElementById('prog').classList.remove('show');
+      document.getElementById('res').classList.add('show');
+    }catch(e){
+      document.getElementById('prog').classList.remove('show');
+      document.getElementById('err').textContent='Analysis error: '+e.message;
+      document.getElementById('err').classList.add('show');
+      console.error(e);
+    }finally{
+      document.getElementById('dbtn').disabled=false;
+    }
+  },80);
+}
+
+document.addEventListener('keydown',e=>{if(e.key==='Enter'&&(e.ctrlKey||e.metaKey))run();});
+cc();
+</script>
+</body>
+</html>
