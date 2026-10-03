@@ -20,8 +20,6 @@ Vākya takes raw Sanskrit text in Devanagari and gives back four things at once:
 
 It runs as a **single HTML file with zero dependencies** — no server, no API key, no signup, no subscription, no internet connection required after the page loads once. Open `index.html` in any browser and it works. That is not a limitation of an early prototype; it is the permanent, non-negotiable design floor of this project (see [Why offline-first](#why-offline-first-is-not-a-compromise) below).
 
-**[→ Try it live](https://YOUR-USERNAME.github.io/vakya/)** *(update this link once GitHub Pages is enabled — see [Deployment](#deployment))*
-
 ---
 
 ## Why this exists
