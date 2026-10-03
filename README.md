@@ -49,7 +49,7 @@ Try it on the seven built-in sample verses (Māṇḍūkya, Bhagavad Gītā 2.47
 
 A **neural translation layer** that replaces the closed-vocabulary dictionary lookup with a model that generalizes to text it has never seen — while keeping the offline dictionary permanently as a zero-connectivity fallback (Tier 0).
 
-The full technical specification — architecture, training data sources, model sizing, evaluation framework, BlueBEAR HPC training plan, budget, and funding targets — is documented in **[`docs/TECHNICAL_SPECIFICATION.md`](docs/TECHNICAL_SPECIFICATION.md)**. Read that before opening an issue about "why not just use GPT-4 for this" — it's answered there, in detail, with reasoning.
+The full technical specification — architecture, training data sources, model sizing, evaluation framework, solid HPC training plan, budget, and funding targets — is documented in **[`docs/TECHNICAL_SPECIFICATION.md`](docs/TECHNICAL_SPECIFICATION.md)**. Read that before opening an issue about "why not just use GPT-4 for this" — it's answered there, in detail, with reasoning.
 
 The short version:
 
