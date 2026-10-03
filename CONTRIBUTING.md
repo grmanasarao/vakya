@@ -34,7 +34,7 @@ Open a pull request adding entries directly, or open an issue with the data and 
 
 ## If you're an ML engineer
 
-Start with **Section 4 (The Four-Stage Neural Pipeline)** and **Section 7 (BlueBEAR Training Plan)** of the technical spec. The short version of what's needed:
+Start with **Section 4 (The Four-Stage Neural Pipeline)** and **Section 7 (Training Plan)** of the technical spec. The short version of what's needed:
 
 | Stage | What it needs | Where to start |
 |---|---|---|
@@ -43,7 +43,7 @@ Start with **Section 4 (The Four-Stage Neural Pipeline)** and **Section 7 (BlueB
 | 3 — Translation | Fine-tune [IndicTrans2](https://github.com/AI4Bharat/IndicTrans2) on curated Sanskrit–English (and later Kannada) parallel data | `src/stage3_translation/` |
 | 4 — Rendering/routing | Wire model outputs into the existing `index.html` render functions, with graceful fallback to Tier 0 | `src/stage4_integration/` |
 
-Ready-to-adapt Slurm job templates for BlueBEAR (or any Slurm-based HPC cluster) are in the spec's Appendix A. Swap `<PROJECTNAME>` and the paths and they should run largely as-is.
+Ready-to-adapt Slurm job templates for any Slurm-based HPC cluster are in the spec's Appendix A. Swap `<PROJECTNAME>` and the paths and they should run largely as-is.
 
 **Do not propose training a large model from scratch as a first move.** The spec (Section 6.2) explains exactly why: training data ceiling (~300–500K parallel pairs), the deployment target (must eventually run on a browser/edge device), and Sanskrit's own grammatical systematicity all argue for starting small and starting from existing checkpoints. If you disagree, open an issue and make the case — the spec is a living document, not scripture.
 
@@ -69,17 +69,5 @@ Priorities:
 - Visual/interaction polish that doesn't compromise load time or offline capability
 
 ---
-
-## If you're a funder, institution, or potential collaborator
-
-See **Section 14 (Funding & Partnership Targets)** and **Section 12 (Resourcing & Team)** of the technical spec. The short pitch: this is free, open, offline-capable cultural infrastructure for the largest living Sanskrit scholarly tradition in the world, built with no paywall and no corporate ownership. The ask is deliberately small (Section 13, Budget) because the architecture was designed to keep it small — compute, data, and hosting are free or already available; the cash need is almost entirely human expert time and the Kannada digitization sub-project.
-
-Reach out by opening an issue tagged `partnership`, or via the contact details in the repository owner's profile.
-
----
-
-## Code of conduct
-
-This project touches sacred text for a living religious and philosophical tradition. Treat the subject matter, and disagreements about how to represent it, with the seriousness that deserves. Beyond that: be kind, assume good faith, and remember that most people finding this repo are here because they want more people to have free access to something they love.
 
 *ॐ शान्तिः शान्तिः शान्तिः*
