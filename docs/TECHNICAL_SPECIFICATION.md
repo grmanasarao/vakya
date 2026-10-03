@@ -309,5 +309,3 @@ Tier 2 (HuggingFace Spaces, free T4) is the realistic near-term deployment targe
 ---
 
 *ॐ शान्तिः शान्तिः शान्तिः*
-
-**End of document.**
