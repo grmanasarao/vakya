@@ -3,10 +3,6 @@
 **A Neural Machine Translation System for Sanskrit**
 *Word Segmentation · Morphological Analysis · English & Kannada Translation*
 
-**Technical Specification & Research Proposal**
-
-Prepared for submission toward BlueBEAR HPC allocation, University of Birmingham, and prospective funding bodies (DST-SERB, TDIL, Wikimedia Foundation).
-
 **Author:** Manasa Rao G R
 Senior UX Researcher · Independent Researcher, Computational Sanskrit
 Bengaluru, India · July 2026
@@ -21,17 +17,10 @@ Bengaluru, India · July 2026
 4. [The Four-Stage Neural Pipeline](#4-the-four-stage-neural-pipeline)
 5. [Training Data — Sourcing, Cleaning, Licensing](#5-training-data--sourcing-cleaning-licensing)
 6. [Model Architecture & Size](#6-model-architecture--size)
-7. [The BlueBEAR Training Plan](#7-the-bluebear-training-plan)
-8. [Evaluation Framework](#8-evaluation-framework)
-9. [Deployment Architecture](#9-deployment-architecture)
-10. [Risk Register](#10-risk-register)
-11. [Timeline & Milestones](#11-timeline--milestones)
-12. [Resourcing & Team](#12-resourcing--team)
-13. [Budget](#13-budget)
-14. [Funding & Partnership Targets](#14-funding--partnership-targets)
-15. [Ethical, Cultural & Licensing Considerations](#15-ethical-cultural--licensing-considerations)
-16. [Appendix A — BlueBEAR Slurm Job Templates](#appendix-a--bluebear-slurm-job-templates)
-17. [Appendix B — Glossary of Terms](#appendix-b--glossary-of-terms)
+7. [Evaluation Framework](#8-evaluation-framework)
+8. [Deployment Architecture](#9-deployment-architecture)
+9. [Risk Register](#10-risk-register)
+10. [Timeline & Milestones](#10-timeline--milestones)
 
 ---
 
@@ -39,7 +28,7 @@ Bengaluru, India · July 2026
 
 Vākya is a proposed neural machine translation system for Sanskrit, designed to take raw Devanagari text as input and produce four synchronized outputs: (1) sandhi-resolved word segmentation, (2) full morphological analysis of every word (case, number, gender, tense, root/dhātu), (3) a fluent English translation, and (4) a fluent Kannada translation. The system is built specifically to run offline-first on low-cost devices, with the neural model as an online enhancement layer over a zero-dependency dictionary fallback that already exists as a working prototype (`index.html` / `vakya_offline.html`).
 
-This document has three purposes. First, it is a complete technical specification of what Vākya does today and what the neural upgrade path requires — intended as project documentation for the author's own reference and for onboarding collaborators. Second, it is a training and evaluation pipeline for building this from scratch on the University of Birmingham's BlueBEAR HPC service, adapted from the existing pipeline the author built for Madhav Manjunath's MSc dissertation (multi-model literature review classification on BlueBEAR). Third, it is written to double as a funding proposal — the framing, evidence base, and evaluation plan are structured so sections can be lifted directly into applications to DST-SERB, the TDIL programme, or the Wikimedia Foundation.
+This document has three purposes. First, it is a complete technical specification of what Vākya does today and what the neural upgrade path requires — intended as project documentation for the author's own reference and for onboarding collaborators. Second, it is a training and evaluation pipeline for building this from scratch a HPC service. Third, it is written to double as a funding proposal — the framing, evidence base, and evaluation plan are structured so sections can be lifted directly into applications to DST-SERB, the TDIL programme, or the Wikimedia Foundation.
 
 > **The core claim.** No existing open tool combines live sandhi-splitting, full morphological tagging, and bilingual (English + Kannada) neural translation in a single free, offline-capable interface built for students rather than Indologists. Component technologies exist separately (ByT5-Sanskrit / Dharmamitra for segmentation, IndicTrans2 for translation, the Sanskrit Heritage Site for morphology) but nothing unifies them for this audience. Vākya's contribution is the integration and the accessibility architecture, not a single novel algorithm.
 
@@ -257,72 +246,14 @@ A shared SentencePiece BPE vocabulary of 32,000 subword tokens across Sanskrit, 
 | **TOTAL** | **~50M** | **100%** |
 
 At this size: ~200MB in fp32, ~50MB after INT8 post-training quantization — small enough to bundle directly into a browser via WebAssembly (ONNX Runtime Web) for genuinely offline neural inference, which is the eventual target state for Tier 1 of the deployment architecture in Section 9.
+The HPC Training plan is yet to be formalised, identifying GPU resources available and a concrete job plan.
 
 ---
 
-## 7. The BlueBEAR Training Plan
 
-BlueBEAR is the University of Birmingham's HPC service, running RedHat Enterprise Linux and Slurm workload management. This section documents the actual GPU resources available and a concrete job plan, following the same pattern the author already used successfully for Madhav Manjunath's MSc dissertation work (multi-model Streamlit application for systematic literature review classification, run on BlueBEAR HPC endpoints).
+## 7. Evaluation Framework
 
-### 7.1 BlueBEAR GPU specifications (confirmed)
-
-- Standard GPU nodes are Ice Lake-based with A100 GPUs. Each node has 72 CPU cores and 4 GPUs, with GPUs bound in pairs to CPU halves (2 GPUs bound to the first 36 cores, 2 to the second 36 cores).
-- A100 GPUs on the associated HPC service specification carry 40GB of GPU RAM per card — sufficient for fine-tuning both the 50M-parameter Path B model and the 200M-parameter IndicTrans2 fine-tune (Path A) with substantial headroom, and workable even for full from-scratch pre-training runs with reasonable batch sizes.
-- Job submission is via Slurm, requesting GPU resources in the form `gpu:a100:1` (one A100 per node) inside a project that has GPU service membership.
-- Access requires membership of a BlueBEAR project with GPU allocation — this is the access Madhav's supervisor/department already holds, and the specific access path to formalize first (Section 12).
-- The University of Birmingham also operates Baskerville, a Tier 2 national HPC system with 184 A100 GPUs specifically designed for AI/ML workloads and accessible via the national Access to HPC scheme (EPSRC-funded) — this is a credible escalation path if BlueBEAR's shared allocation proves insufficient for the from-scratch Path B runs, and worth mentioning in any funding narrative as evidence of a scalable compute pathway already within reach.
-
-### 7.2 Estimated compute budget per stage
-
-| Job | Hardware | Estimated wall-time | A100-hours |
-|---|---|---|---|
-| Stage 1 fine-tune (ByT5-Sanskrit on Vedic sandhi data) | 1× A100 40GB | 4–8 hrs | 4–8 |
-| Stage 2 training (morphology tagger on DCS) | 1× A100 40GB | 3–6 hrs | 3–6 |
-| Stage 3a fine-tune (IndicTrans2, Path A) | 1× A100 40GB | 8–14 hrs | 8–14 |
-| Stage 3b pre-train + train (Path B, from scratch, later phase) | 2–4× A100 40GB | 20–40 hrs | 60–160 |
-| Evaluation sweeps (all stages, multiple checkpoints) | 1× A100 40GB | 6–10 hrs | 6–10 |
-| **TOTAL, Phase 1 (Path A only)** | — | — | **~25–40 A100-hrs** |
-| **TOTAL, Phase 1+2 (incl. Path B)** | — | — | **~90–230 A100-hrs** |
-
-For reference, Phase 1 alone (25-40 A100-hours) is a genuinely modest ask by HPC standards — well within what a shared departmental allocation can typically absorb without a special request, and a reasonable single ask if a dedicated allocation is sought.
-
-### 7.3 Job structure and environment
-
-Following the pattern already proven on the Madhav dissertation work: containerized environment via Singularity (BlueBEAR's supported container runtime), with PyTorch + HuggingFace Transformers + HuggingFace Datasets as the core stack, checkpointed regularly (DMTCP or native HuggingFace Trainer checkpointing) so long jobs survive queue preemption or wall-time limits.
-
-```bash
-#!/bin/bash
-#SBATCH --account=<PROJECTNAME>
-#SBATCH --qos=bbgpu
-#SBATCH --gres=gpu:a100:1
-#SBATCH --cpus-per-task=18
-#SBATCH --mem=64G
-#SBATCH --time=12:00:00
-#SBATCH --job-name=vakya-stage3-finetune
-
-module purge; module load bluebear
-module load Python/3.11 CUDA/12.1
-source /rds/projects/<proj>/vakya-env/bin/activate
-
-python train_stage3.py \
-  --base_model ai4bharat/indictrans2-en-indic-200M \
-  --train_data data/sa_en_parallel_clean.jsonl \
-  --output_dir checkpoints/stage3_v1 \
-  --per_device_train_batch_size 16 \
-  --gradient_accumulation_steps 4 \
-  --num_train_epochs 3 \
-  --fp16 \
-  --save_strategy steps --save_steps 500 \
-  --evaluation_strategy steps --eval_steps 500
-```
-
-A fuller set of Slurm templates for all pipeline stages is provided in [Appendix A](#appendix-a--bluebear-slurm-job-templates).
-
----
-
-## 8. Evaluation Framework
-
-### 8.1 Automated metrics
+### 7.1 Automated metrics
 
 | Metric | Applied to | Why | Target threshold |
 |---|---|---|---|
@@ -331,7 +262,7 @@ A fuller set of Slurm templates for all pipeline stages is provided in [Appendix
 | Segmentation accuracy | Stage 1 | Exact-match against SandhiKosh benchmark corpus (IIT Delhi) | ≥85% on classical Sanskrit; Vedic text is harder — track separately |
 | Per-tag morphology accuracy | Stage 2 | Separate accuracy for case, number, gender, tense against DCS gold labels | ≥90% per-tag, ≥75% full-tag-set exact match |
 
-### 8.2 Human evaluation protocol
+### 7.2 Human evaluation protocol
 
 Automated metrics alone are insufficient for a tool whose core promise is philosophical and grammatical fidelity. The evaluation protocol therefore includes a fixed human-review pass before any release:
 
@@ -342,7 +273,7 @@ Automated metrics alone are insufficient for a tool whose core promise is philos
 
 ---
 
-## 9. Deployment Architecture
+## 8. Deployment Architecture
 
 The deployment model is explicitly tiered, preserving the zero-cost offline guarantee as a permanent floor rather than a temporary stopgap.
 
@@ -356,191 +287,26 @@ Tier 2 (HuggingFace Spaces, free T4) is the realistic near-term deployment targe
 
 ---
 
-## 10. Risk Register
+## 9. Risk Register
 
 | Risk | Likelihood | Impact | Mitigation |
 |---|---|---|---|
 | Kannada parallel data proves too sparse for usable quality | High | High | Phase the roadmap explicitly (Section 5.3); ship English first; treat Venkatrao digitisation as its own fundable sub-project |
 | Model hallucinates philosophically incorrect content on sacred text | Medium | Very high (reputational, cultural) | Hard hallucination gate in evaluation (Section 8.2); always show Stage 1/2 mechanical breakdown alongside Stage 3 translation so the person can sanity-check |
-| BlueBEAR allocation insufficient or access lapses (dependent on Madhav's continued access) | Medium | High | Formalise a named project allocation early (Section 12); identify Baskerville/national Access to HPC as escalation path |
 | Sandhi/morphology accuracy on Vedic (vs. Classical) Sanskrit lower than expected, since most tools are Classical-tuned | Medium-high | Medium | Budget explicit fine-tuning time on Vedic-specific DCS/GRETIL subsets; track Vedic and Classical accuracy as separate metrics throughout, not one blended number |
 | Scope creep toward "general Sanskrit AI" delays a shippable v1 | Medium | Medium | Freeze v1 scope to the 4-stage pipeline in Section 4 with the 7 demonstration texts already in the prototype; explicitly defer broader corpus coverage to v2 |
 
 ---
 
-## 11. Timeline & Milestones
+## 10. Timeline & Milestones
 
 | Phase | Duration | Key milestones |
 |---|---|---|
-| Phase 0 — Setup | Weeks 1–2 | Formalise BlueBEAR project access; download & clean DCS, Samanantar, GRETIL subsets; stand up evaluation harness (chrF, COMET, SandhiKosh scoring) |
+| Phase 0 — Setup | Weeks 1–2 | Formalise HPC options; download & clean DCS, Samanantar, GRETIL subsets; stand up evaluation harness (chrF, COMET, SandhiKosh scoring) |
 | Phase 1 — Path A (fine-tune) | Weeks 3–8 | Fine-tune ByT5-Sanskrit (Stage 1) and IndicTrans2 (Stage 3a) on curated Vedic/Upaniṣadic data; train Stage 2 morphology tagger on DCS; run full evaluation suite |
 | Phase 1 release | Week 9–10 | Wire Stage 1-3 outputs into `index.html` as Tier 2 hosted-API mode via HuggingFace Spaces; human evaluation pass on the 50-verse gold set; public English-only release |
 | Phase 2 — Kannada | Weeks 11–20 | Venkatrao volume digitisation sub-project; Sanskrit-Kannada alignment; Stage 3 Kannada arm fine-tune; release bilingual v1 |
 | Phase 3 — Path B (research) | Months 6–14 | From-scratch Sanskrit-aware tokenizer and encoder-decoder (Section 6.4); morphology-conditioned decoding; target Tier 1 in-browser deployment; write up as a paper |
-
----
-
-## 12. Resourcing & Team
-
-### 12.1 Minimum viable team for Phase 1
-
-- **Project lead / ML engineer** (1 FTE-equivalent): data pipeline, training runs, evaluation — the role the author is positioned to fill given existing Python, NLP pipeline, and BlueBEAR experience from the Madhav dissertation collaboration.
-- **Sanskrit domain reviewer** (part-time / advisory): validates the 50-verse human evaluation set, sanity-checks morphological tag accuracy, flags philosophically consequential mistranslations. Does not need to be an ML person — a traditionally-trained Sanskrit scholar or an academic Sanskritist collaborator is exactly right.
-- **HPC access sponsor**: the named BlueBEAR/University of Birmingham project holder (Madhav Manjunath's supervising department) whose allocation this work runs under — needs to be formally confirmed before Phase 0 begins, since anonymous or borrowed access is not a sustainable basis for a multi-month training programme.
-
-### 12.2 Phase 2+ additions
-
-- Kannada-Sanskrit bilingual reviewer/translator, ideally with access to or relationship with the Kannada Sahitya Parishat or the Kannada and Culture Department (Government of Karnataka) for the Venkatrao volume digitisation work.
-- A second ML contributor once Path B (from-scratch training) begins, given the larger compute and longer iteration cycles involved.
-
----
-
-## 13. Budget
-
-| Line item | Phase 1 estimate | Notes |
-|---|---|---|
-| BlueBEAR compute (25-40 A100-hrs) | £0 (existing allocation) | Contingent on formal project access being confirmed; treat as in-kind if not already covered |
-| Data licensing / access | £0 | All identified sources (DCS, GRETIL, Samanantar, public-domain translations, FLORES-200) are open/free |
-| HuggingFace Spaces hosting (Tier 2) | £0 (free tier T4) | Sufficient for Phase 1 release traffic; monitor for rate-limit upgrades needed |
-| Sanskrit domain reviewer honorarium | £500–1,500 | Recommended even if informal collaboration is possible, to properly value scholarly time on the 50-verse evaluation pass |
-| Venkatrao volume digitisation (Phase 2) | £2,000–5,000 | OCR + manual correction + alignment for 36 volumes; scope depends on Kannada Culture Dept. access terms; strongest single candidate for a dedicated small grant |
-| Contingency (compute overrun, tooling) | £500–1,000 | Standard 10-15% buffer |
-| **TOTAL Phase 1 (cash)** | **£1,000–2,500** | Excludes in-kind BlueBEAR compute and volunteer time |
-| **TOTAL Phase 1+2 (cash)** | **£3,000–8,500** | — |
-
-This is a genuinely modest budget by research-funding standards precisely because the compute, data, and hosting are all free or already available — the cash need is almost entirely for human expert time and the Kannada digitisation sub-project. This is a strong point to make explicit in any funding narrative: the ask is small because the architecture was deliberately designed to keep it small.
-
----
-
-## 14. Funding & Partnership Targets
-
-| Body | Fit | Typical scale | Notes |
-|---|---|---|---|
-| DST-SERB Early Career Research Award (India) | Strong — individual PI, recent postgraduate, clear proposal | Up to ₹50 lakh (~£48,000) | Would fund a full year, a small team, and Phase 2/3 compute if BlueBEAR access were ever insufficient |
-| TDIL Programme (MeitY, India) | Very strong — explicitly funds Indian-language NLP tools, has funded Sanskrit NLP at IIT groups before | Varies | The most directly on-mission funder identified |
-| Sanskrit Promotion Foundation (Govt. of India) | Strong — digital Sanskrit is an explicit programme area | Varies | Worth a direct exploratory enquiry given exact thematic fit |
-| Wikimedia Foundation grants | Good — supports Sanskrit Wikipedia/Wiktionary-adjacent tooling | Typically smaller, project-based | Fast-turnaround option relative to government schemes |
-| Infosys Foundation (humanities/classical knowledge) | Moderate — thematic fit on classical Indian knowledge systems | Varies | Worth exploring alongside the government routes |
-| Google TPU Research Cloud | Compute-in-kind, not cash | Free TPU v4 hours, 1-2 week approval | Useful hedge if BlueBEAR allocation needs supplementing, particularly for Phase 3 Path B |
-
-The consistent pitch across all of these: India holds the largest living Sanskrit scholarly tradition in the world; this is free, open, offline-capable cultural infrastructure built by an Indian researcher for Indian students, with no paywall and no corporate ownership, running on a single HTML file that works on a 2G connection in a village school. That framing is accurate to what has actually been built and proposed here, not just persuasive language.
-
----
-
-## 15. Ethical, Cultural & Licensing Considerations
-
-### 15.1 Sacred text handling
-
-The Upaniṣads, Gītā, and Veda are living scripture for a large and diverse population, not a neutral text corpus. The hard hallucination gate in Section 8.2 exists specifically because of this — a model confidently inventing a philosophical claim not present in the source text is categorically worse here than in a generic MT context. Wherever the model's confidence is low, the interface should say so plainly rather than presenting a fluent-sounding but potentially wrong translation with false authority. Traditional commentarial authority (Śaṅkara's Bhāṣya, Sāyaṇa's commentary) should remain visibly cited wherever the training data draws on it, per the existing pattern already established in `index.html`'s attribution panel.
-
-### 15.2 Licensing
-
-- Monier-Williams (1899) and Apte (1890) dictionaries: public domain.
-- DCS: CC-BY-SA — requires attribution and share-alike on derived annotation data, compatible with an open project.
-- IndicTrans2: Apache 2.0 — permits fine-tuning and redistribution, including commercial use if that is ever relevant.
-- Public-domain 19th/20th-century translations (Müller, Griffith, Ryder): confirmed public domain by publication date; safe to use without restriction.
-- The Venkatrao Kannada Rigveda volumes: currently under reprint by the Kannada and Culture Department, Government of Karnataka — licensing status for digitisation and derivative use must be confirmed directly with that department before the Phase 2 digitisation sub-project begins. This is a required action item, not a formality.
-
-### 15.3 Commitment to free access
-
-Consistent with the founding motivation for this project, the recommendation is that Vākya's model weights, code, and any derived training data the project has rights to redistribute be released under a permissive open licence (Apache 2.0 or CC-BY-SA, matching the licences of the inputs) rather than held proprietary. This is both an ethical commitment already implicit in everything built so far and a practical one — it is very likely to strengthen, not weaken, the funding applications in Section 14, most of which favour or require open outputs from work they support.
-
----
-
-## Appendix A — BlueBEAR Slurm Job Templates
-
-### A.1 Stage 1 — ByT5-Sanskrit fine-tuning
-
-```bash
-#!/bin/bash
-#SBATCH --account=<PROJECTNAME>
-#SBATCH --qos=bbgpu
-#SBATCH --gres=gpu:a100:1
-#SBATCH --cpus-per-task=18
-#SBATCH --mem=48G
-#SBATCH --time=08:00:00
-#SBATCH --job-name=vakya-stage1-sandhi
-
-module purge; module load bluebear Python/3.11 CUDA/12.1
-source /rds/projects/<proj>/vakya-env/bin/activate
-
-python train_stage1.py \
-  --base_model buddhist-nlp/byt5-sanskrit \
-  --train_data data/dcs_sandhi_pairs.jsonl \
-  --output_dir checkpoints/stage1_v1 \
-  --per_device_train_batch_size 8 \
-  --num_train_epochs 5 --fp16 \
-  --save_steps 500 --eval_steps 500
-```
-
-### A.2 Stage 2 — Morphology tagger training
-
-```bash
-#!/bin/bash
-#SBATCH --account=<PROJECTNAME>
-#SBATCH --qos=bbgpu
-#SBATCH --gres=gpu:a100:1
-#SBATCH --cpus-per-task=18
-#SBATCH --mem=32G
-#SBATCH --time=06:00:00
-#SBATCH --job-name=vakya-stage2-morph
-
-module purge; module load bluebear Python/3.11 CUDA/12.1
-source /rds/projects/<proj>/vakya-env/bin/activate
-
-python train_stage2.py \
-  --train_data data/dcs_morphology_gold.jsonl \
-  --model_config configs/morph_encoder_small.json \
-  --output_dir checkpoints/stage2_v1 \
-  --per_device_train_batch_size 32 \
-  --num_train_epochs 10 --fp16
-```
-
-### A.3 Evaluation sweep (all stages)
-
-```bash
-#!/bin/bash
-#SBATCH --account=<PROJECTNAME>
-#SBATCH --qos=bbgpu
-#SBATCH --gres=gpu:a100:1
-#SBATCH --cpus-per-task=9
-#SBATCH --mem=32G
-#SBATCH --time=04:00:00
-#SBATCH --job-name=vakya-eval
-
-module purge; module load bluebear Python/3.11 CUDA/12.1
-source /rds/projects/<proj>/vakya-env/bin/activate
-
-python evaluate_pipeline.py \
-  --stage1_ckpt checkpoints/stage1_v1 \
-  --stage2_ckpt checkpoints/stage2_v1 \
-  --stage3_ckpt checkpoints/stage3_v1 \
-  --eval_set data/flores200_sa_en_devtest.jsonl \
-  --eval_set_sandhi data/sandhikosh_benchmark.jsonl \
-  --metrics chrf comet segmentation_acc morph_tag_acc \
-  --output_report reports/eval_$(date +%Y%m%d).json
-```
-
-Note: each SBATCH header requesting `gpu:a100:1` with 18 CPU cores follows the documented BlueBEAR binding pattern of 4× (1 GPU, 18 cores) jobs per standard 72-core/4-GPU Ice Lake node — this maximises node-sharing efficiency and is the recommended default unless a job specifically needs more cores per GPU.
-
----
-
-## Appendix B — Glossary of Terms
-
-| Term | Definition |
-|---|---|
-| Sandhi | Phonetic fusion rules applying at word/morpheme boundaries in Sanskrit; sandhi splitting reverses this to recover word boundaries |
-| Dhātu | Verbal root — the base form from which inflected verb forms are derived |
-| Prātipadika | Nominal stem — the base form from which declined noun/adjective forms are derived |
-| Pada-pāṭha | The traditional word-separated recitation form of Vedic text, as distinct from the sandhi-joined Saṃhitā-pāṭha |
-| BPE (Byte-Pair Encoding) | A subword tokenization algorithm that learns a fixed vocabulary of frequent character sequences from training data |
-| chrF | Character n-gram F-score, a machine translation evaluation metric more tolerant of morphological variation than BLEU |
-| COMET | A neural machine translation evaluation metric trained to predict human quality judgements |
-| DCS | Digital Corpus of Sanskrit — University of Cologne's morphologically annotated Sanskrit text corpus |
-| FLORES-200 | Meta's professionally-translated benchmark evaluation set spanning 200 languages, including Sanskrit |
-| Fine-tuning | Continuing to train an already-trained model on new, typically smaller and more specific, data rather than training from randomly initialised weights |
-| Quantization (INT8) | Reducing a model's numeric precision from 32-bit floats to 8-bit integers post-training, shrinking size and speeding inference with modest accuracy cost |
-| ONNX Runtime Web | A runtime enabling trained models to execute inside a web browser via WebAssembly, without a server |
 
 ---
 
