@@ -3,8 +3,7 @@
 **A Neural Machine Translation System for Sanskrit**
 *Word Segmentation · Morphological Analysis · English & Kannada Translation*
 
-**Author:** Manasa Rao G R
-Senior UX Researcher · Independent Researcher, Computational Sanskrit · Bengaluru, India · July 2026
+**Author:** Manasa Rao · Independent Researcher, Computational Sanskrit · Bengaluru, India
 
 ---
 
