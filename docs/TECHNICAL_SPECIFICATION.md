@@ -4,8 +4,7 @@
 *Word Segmentation · Morphological Analysis · English & Kannada Translation*
 
 **Author:** Manasa Rao G R
-Senior UX Researcher · Independent Researcher, Computational Sanskrit
-Bengaluru, India · July 2026
+Senior UX Researcher · Independent Researcher, Computational Sanskrit · Bengaluru, India · July 2026
 
 ---
 
