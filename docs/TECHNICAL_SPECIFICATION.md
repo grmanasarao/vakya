@@ -85,7 +85,7 @@ Every word not in the 392-entry dictionary, and not reachable by stripping one o
 
 Similarly, the "translation" in the current build is not translation in the linguistic sense — it is a chain of independently-looked-up word glosses joined with dashes. This is useful for word-level pedagogy (which is the correct design for that specific feature) but is not a fluent sentence, and does not attempt to resolve syntax, word order differences between Sanskrit's free word order and English/Kannada's more fixed order, or the semantic composition that turns a word list into a meaningful clause.
 
-> **Design decision to preserve.** The offline dictionary is not being replaced or deprecated by the neural model — it is being kept permanently as Tier 0 of a tiered system (see Section 9, Deployment Architecture). Any device with zero connectivity still gets a working, if less capable, decoder. This is the single most important architectural commitment in this document and should not be relaxed for engineering convenience later.
+> **Design decision to preserve.** The offline dictionary is not being replaced or deprecated by the neural model — it is being kept permanently as Tier 0 of a tiered system (see Section 8, Deployment Architecture). Any device with zero connectivity still gets a working, if less capable, decoder. This is the single most important architectural commitment in this document and should not be relaxed for engineering convenience later.
 
 ---
 
@@ -193,7 +193,7 @@ Realistic usable total after cleaning and deduplication: **300,000–500,000 San
 
 This is the harder half of the data problem and should be budgeted for accordingly. Realistic parallel pair count from existing digitized sources: **20,000–50,000**, substantially smaller than the English side.
 
-- **Primary source:** the H. P. Venkatrao 36-volume Rigveda Kannada translation, commissioned by the Mysore Maharaja in the 1950s and currently being reprinted by the Kannada and Culture Department, Government of Karnataka. This is the single highest-authority Sanskrit-Kannada parallel resource in existence for Vedic text but exists in print/reprint form, not digitized parallel corpus form — digitization and alignment is a discrete, fundable sub-project in itself (see Section 12, resourcing).
+- **Primary source:** the H. P. Venkatrao 36-volume Rigveda Kannada translation, commissioned by the Mysore Maharaja in the 1950s and currently being reprinted by the Kannada and Culture Department, Government of Karnataka. This is the single highest-authority Sanskrit-Kannada parallel resource in existence for Vedic text but exists in print/reprint form, not digitized parallel corpus form.
 - **Secondary source:** sanskritdocuments.org's Kannada-script section, which has partial padaccheda (word-split) Rigveda text already in digital form.
 - **Tertiary source:** traditional Kannada commentaries on the Upaniṣads and Gītā from Karnataka maṭhas and publishing houses, where digitized.
 
@@ -231,7 +231,7 @@ A shared SentencePiece BPE vocabulary of 32,000 subword tokens across Sanskrit, 
 
 - 32,000 vocabulary size at 512-dimensional embeddings gives an embedding table of 16.4 million parameters — roughly a third of a 50M-parameter model's total budget, which is normal and expected for a model this size (embedding tables are proportionally larger in smaller models).
 - Training the BPE vocabulary jointly across all three languages (rather than three separate vocabularies) lets shared subwords emerge naturally where they exist — Sanskrit-derived Kannada vocabulary in particular shares substantial surface form with Sanskrit, which the joint tokenizer can exploit.
-- Sanskrit's morphological regularity (Pāṇinian systematicity) means the embedding space should learn approximately consistent offset vectors for grammatical operations — e.g. the vector difference between *ātmā* (nominative) and *ātmanaḥ* (genitive) should be close to the same offset as between *devaḥ* and *devasya*. This is directly testable during evaluation (Section 8) as a diagnostic of whether the model has learned real morphological structure versus surface memorization.
+- Sanskrit's morphological regularity (Pāṇinian systematicity) means the embedding space should learn approximately consistent offset vectors for grammatical operations — e.g. the vector difference between *ātmā* (nominative) and *ātmanaḥ* (genitive) should be close to the same offset as between *devaḥ* and *devasya*. This is directly testable during evaluation (Section 7) as a diagnostic of whether the model has learned real morphological structure versus surface memorization.
 
 ### 6.4 Full parameter budget, target model (Path B, small)
 
@@ -243,7 +243,7 @@ A shared SentencePiece BPE vocabulary of 32,000 subword tokens across Sanskrit, 
 | Output projection + norms/biases | ~3.6M | 7% |
 | **TOTAL** | **~50M** | **100%** |
 
-At this size: ~200MB in fp32, ~50MB after INT8 post-training quantization — small enough to bundle directly into a browser via WebAssembly (ONNX Runtime Web) for genuinely offline neural inference, which is the eventual target state for Tier 1 of the deployment architecture in Section 9.
+At this size: ~200MB in fp32, ~50MB after INT8 post-training quantization — small enough to bundle directly into a browser via WebAssembly (ONNX Runtime Web) for genuinely offline neural inference, which is the eventual target state for Tier 1 of the deployment architecture in Section 8.
 The HPC Training plan is yet to be formalised, identifying GPU resources available and a concrete job plan.
 
 ---
@@ -290,7 +290,7 @@ Tier 2 (HuggingFace Spaces, free T4) is the realistic near-term deployment targe
 | Risk | Likelihood | Impact | Mitigation |
 |---|---|---|---|
 | Kannada parallel data proves too sparse for usable quality | High | High | Phase the roadmap explicitly (Section 5.3); ship English first; treat Venkatrao digitisation as its own fundable sub-project |
-| Model hallucinates philosophically incorrect content on sacred text | Medium | Very high (reputational, cultural) | Hard hallucination gate in evaluation (Section 8.2); always show Stage 1/2 mechanical breakdown alongside Stage 3 translation so the person can sanity-check |
+| Model hallucinates philosophically incorrect content on sacred text | Medium | Very high (reputational, cultural) | Hard hallucination gate in evaluation (Section 7); always show Stage 1/2 mechanical breakdown alongside Stage 3 translation so the person can sanity-check |
 | Sandhi/morphology accuracy on Vedic (vs. Classical) Sanskrit lower than expected, since most tools are Classical-tuned | Medium-high | Medium | Budget explicit fine-tuning time on Vedic-specific DCS/GRETIL subsets; track Vedic and Classical accuracy as separate metrics throughout, not one blended number |
 | Scope creep toward "general Sanskrit AI" delays a shippable v1 | Medium | Medium | Freeze v1 scope to the 4-stage pipeline in Section 4 with the 7 demonstration texts already in the prototype; explicitly defer broader corpus coverage to v2 |
 
