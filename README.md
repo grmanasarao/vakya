@@ -1,6 +1,6 @@
 # वाक्य · Vākya
 
-**A free, offline-first Sanskrit decoder — built so no student is priced out of their own scripture.**
+**A free, offline-first Sanskrit decoder**
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Status: Rule-based prototype live](https://img.shields.io/badge/status-prototype--live-brightgreen)]()
@@ -27,10 +27,6 @@ It runs as a **single HTML file with zero dependencies** — no server, no API k
 ## Why this exists
 
 Sanskrit decoding tools that do parts of this well already exist — [ByT5-Sanskrit / Dharmamitra](https://dharmamitra.org) for segmentation, [IndicTrans2](https://github.com/AI4Bharat/IndicTrans2) for translation, the [Sanskrit Heritage Site](https://sanskrit.inria.fr) for morphology. All of them assume an Indologist at a terminal with a stable connection.
-
-None of them assume a bright student on a ₹6,000 Android phone with no data plan, trying to read the Māṇḍūkya Upaniṣad in the original for the first time.
-
-Vākya is built for that student. Every architectural decision here is filtered through that constraint first, and state-of-the-art quality second.
 
 ---
 
