@@ -298,13 +298,13 @@ Tier 2 (HuggingFace Spaces, free T4) is the realistic near-term deployment targe
 
 ## 10. Timeline & Milestones
 
-| Phase | Duration | Key milestones |
-|---|---|---|
-| Phase 0 — Setup | Weeks 1–2 | Formalise HPC options; download & clean DCS, Samanantar, GRETIL subsets; stand up evaluation harness (chrF, COMET, SandhiKosh scoring) |
-| Phase 1 — Path A (fine-tune) | Weeks 3–8 | Fine-tune ByT5-Sanskrit (Stage 1) and IndicTrans2 (Stage 3a) on curated Vedic/Upaniṣadic data; train Stage 2 morphology tagger on DCS; run full evaluation suite |
-| Phase 1 release | Week 9–10 | Wire Stage 1-3 outputs into `index.html` as Tier 2 hosted-API mode via HuggingFace Spaces; human evaluation pass on the 50-verse gold set; public English-only release |
-| Phase 2 — Kannada | Weeks 11–20 | Venkatrao volume digitisation sub-project; Sanskrit-Kannada alignment; Stage 3 Kannada arm fine-tune; release bilingual v1 |
-| Phase 3 — Path B (research) | Months 6–14 | From-scratch Sanskrit-aware tokenizer and encoder-decoder (Section 6.4); morphology-conditioned decoding; target Tier 1 in-browser deployment; write up as a paper |
+| Phase | Key milestones |
+|---|---|
+| Setup | Formalise HPC options; download & clean DCS, Samanantar, GRETIL subsets; stand up evaluation harness (chrF, COMET, SandhiKosh scoring) |
+| Path A (fine-tune) | Fine-tune ByT5-Sanskrit (Stage 1) and IndicTrans2 (Stage 3a) on curated Vedic/Upaniṣadic data; train Stage 2 morphology tagger on DCS; run full evaluation suite |
+| Release | Wire Stage 1-3 outputs into `index.html` as Tier 2 hosted-API mode via HuggingFace Spaces; human evaluation pass on the 50-verse gold set; public English-only release |
+| Kannada | Venkatrao volume digitisation sub-project; Sanskrit-Kannada alignment; Stage 3 Kannada arm fine-tune; release bilingual v1 |
+| Path B (research) | From-scratch Sanskrit-aware tokenizer and encoder-decoder (Section 6.4); morphology-conditioned decoding; target Tier 1 in-browser deployment; write up as a paper |
 
 ---
 
